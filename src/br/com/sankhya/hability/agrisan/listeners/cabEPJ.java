@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import br.com.sankhya.extensions.eventoprogramavel.EventoProgramavelJava;
 import br.com.sankhya.jape.EntityFacade;
 import br.com.sankhya.jape.core.JapeSession;
 import br.com.sankhya.jape.dao.JdbcWrapper;
+import br.com.sankhya.jape.event.ModifingFields;
 import br.com.sankhya.jape.event.PersistenceEvent;
 import br.com.sankhya.jape.event.TransactionContext;
 import br.com.sankhya.jape.sql.NativeSql;
@@ -29,8 +31,30 @@ public class cabEPJ implements EventoProgramavelJava {
 
 	@Override
 	public void beforeUpdate(PersistenceEvent event) throws Exception {
-		// TODO Auto-generated method stub
+		//VERIFICA SE O USUARIO ESTA ALTERANDO ALGUM DOS CAMPOS: DTENTSAI, CODCENCUS, CODNAT
+		ModifingFields modificados = event.getModifingFields();
+		Map<String, Object> camposAlterados = new LinkedHashMap<String, Object>();
+		DynamicVO cabNota = (DynamicVO) event.getVo();
 
+		if(modificados.isModifing("DTENTSAI")) {
+			camposAlterados.put("DTENTSAI", cabNota.asTimestamp("DTENTSAI"));
+		}
+		if(modificados.isModifing("CODCENCUS")) {
+			camposAlterados.put("CODCENCUS", cabNota.asBigDecimal("CODCENCUS"));
+		}
+		if(modificados.isModifing("CODNAT")) {
+			camposAlterados.put("CODNAT", cabNota.asBigDecimal("CODNAT"));
+		}
+
+		if(camposAlterados.isEmpty()) {
+			return;
+		}
+
+		BigDecimal nuNotaCTe = cabNota.asBigDecimalOrZero("NUNOTA");
+		String bloqueio = verificaAlteracaoCTexNF(nuNotaCTe, camposAlterados);
+		if(bloqueio != null) {
+			MGEModelException.throwMe(new IllegalStateException(bloqueio));
+		}
 	}
 
 	@Override
@@ -132,6 +156,73 @@ public class cabEPJ implements EventoProgramavelJava {
 			JdbcWrapper.closeSession(jdbc);
 			JapeSession.close(hnd);
 		}
+	}
+
+	/*VERIFICA SE OS VALORES ALTERADOS NO CTE SAO DIFERENTES DAS NFs VINCULADAS VIA TGFNCT.
+	  RETORNA A MENSAGEM DE BLOQUEIO DA PRIMEIRA NF DIVERGENTE OU NULL SE ESTIVER TUDO IGUAL*/
+	public static String verificaAlteracaoCTexNF(BigDecimal nuNotaCTe, Map<String, Object> camposAlterados) throws MGEModelException {
+		JapeSession.SessionHandle hnd = null;
+		JdbcWrapper jdbc = null;
+		NativeSql query = null;
+		ResultSet rset = null;
+		String bloqueio = null;
+		try {
+			hnd = JapeSession.open(); hnd.setFindersMaxRows(-1);
+			EntityFacade entity = EntityFacadeFactory.getDWFFacade();
+			jdbc = entity.getJdbcWrapper(); jdbc.openSession();
+			query = new NativeSql(jdbc);
+			query.setNamedParameter("NUNOTA", nuNotaCTe);
+			query.appendSql("SELECT NF.NUNOTA AS NUNOTANF,\n"
+					+ "NF.NUMNOTA AS NUMNOTANF,\n"
+					+ "NF.CODCENCUS AS CODCENCUS,\n"
+					+ "NF.CODNAT AS CODNAT,\n"
+					+ "NF.DTENTSAI AS DTENTSAI\n"
+					+ "\n"
+					+ "FROM TGFCAB CAB\n"
+					+ "INNER JOIN TGFTOP TPO ON TPO.CODTIPOPER = CAB.CODTIPOPER AND TPO.DHALTER = CAB.DHTIPOPER\n"
+					+ "INNER JOIN TGFNCT NCT ON CAB.NUNOTA = NCT.NUNOTA\n"
+					+ "INNER JOIN TGFCAB NF ON NF.NUMNOTA = TO_NUMBER(NCT.NUMERO) AND NF.CHAVENFE = NCT.CHAVENFE\n"
+					+ "WHERE CAB.TIPMOV = 'C' AND TPO.CODMODDOC = 57\n"
+					+ "AND CAB.NUNOTA = :NUNOTA ");
+			rset = query.executeQuery();
+			//PERCORRE TODAS AS NOTAS VINCULADAS AO CTE
+			while(rset.next() && bloqueio == null) {
+				StringBuilder campos = new StringBuilder();
+				StringBuilder valores = new StringBuilder();
+
+				for(Map.Entry<String, Object> campo : camposAlterados.entrySet()) {
+					Object valorNF = "DTENTSAI".equals(campo.getKey())
+							? rset.getTimestamp(campo.getKey())
+							: rset.getBigDecimal(campo.getKey());
+					if(!iguais(campo.getValue(), valorNF)) {
+						if(campos.length() > 0) { campos.append(", "); valores.append(", "); }
+						campos.append(campo.getKey());
+						valores.append(formatar(campo.getValue()));
+					}
+				}
+
+				if(campos.length() > 0) {
+					bloqueio = "Bloqueio! Não é possível alterar os campos " + campos
+							+ " os valores " + valores
+							+ " são diferentes da NF " + rset.getBigDecimal("NUNOTANF")
+							+ " Nro. Nota " + rset.getBigDecimal("NUMNOTANF");
+				}
+			}
+		} catch(Exception e) {
+			handleException(e, "verificaAlteracaoCTexNF");
+		} finally {
+			NativeSql.releaseResources(query);
+			JdbcWrapper.closeSession(jdbc);
+			JapeSession.close(hnd);
+		}
+		return bloqueio;
+	}
+
+	/*FORMATA O VALOR PARA A MENSAGEM (DATA EM dd/MM/yyyy)*/
+	private static String formatar(Object valor) {
+		if(valor == null) return "(vazio)";
+		if(valor instanceof Timestamp) return new SimpleDateFormat("dd/MM/yyyy").format((Timestamp) valor);
+		return valor.toString();
 	}
 
 	/*COMPARA DOIS VALORES TRATANDO NULOS (BIGDECIMAL VIA compareTo PARA IGNORAR ESCALA)*/
