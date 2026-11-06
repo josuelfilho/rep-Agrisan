@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="/rep-bibliotecasJava/snk/SankhyaW-extensions.jar"/>
 	<classpathentry kind="lib" path="/rep-bibliotecasJava/snk/sanutil.jar"/>
 	<classpathentry kind="lib" path="/rep-bibliotecasJava/snk/sanws.jar"/>
+	<classpathentry kind="lib" path="/rep-bibliotecasJava/web/javax.servlet.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
