@@ -6,14 +6,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Notas de Compra x CT-e</title>
+<title>CT-e x Notas de Compra</title>
 <snk:load/>
 <!--
-  DASHBOARD HTML5 - NOTAS DE COMPRA x CT-e (AGRISAN)
-  - LISTA NFs DE COMPRA (TIPMOV 'C', MODELO <> 57) COM VLRFRETE > 0
-  - 1 CLIQUE NA NF: CARREGA O(S) CT-e VINCULADO(S) VIA TGFNCT (MESMO VINCULO DO cabEPJ / replicaRateioNFxCTEJob)
-  - 2 CLIQUES NA NF (OU NO CT-e): ABRE A CENTRAL (LINK NO MESMO PADRAO DO geraMsgLinks)
+  DASHBOARD HTML5 - CT-e x NOTAS DE COMPRA (AGRISAN)
+  - LISTA OS CT-e DE ENTRADA (TIPMOV 'C', TOP MODELO 57) DO PERIODO, UMA LINHA POR CT-e
+  - 1 CLIQUE NO CT-e: CARREGA A(S) NF-e VINCULADA(S) VIA TGFNCT (MESMO VINCULO DO cabEPJ / replicaRateioNFxCTEJob)
+  - 2 CLIQUES NO CT-e OU NA NF-e: ABRE NA CENTRAL DE COMPRAS (CentralNotas_COMPRA)
   - "VER RATEIO": POP UP COMPARANDO O RATEIO (TGFRAV ORIGEM 'E') DAS NFs x CT-e
+  - TOTAIS "COM / SEM NF-e VINCULADO" FUNCIONAM COMO FILTRO DA LISTA DE CT-e
   OBS: NAO USAR TEMPLATE LITERALS COM CIFRAO+CHAVE NO JS (O JSP INTERPRETA COMO EL).
 -->
 <style>
@@ -32,15 +33,7 @@
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--text);font:13px/1.4 var(--font);-webkit-font-smoothing:antialiased}
   button,input,select{font:inherit;color:inherit}
-  .app{display:flex;flex-direction:column;gap:12px;min-height:100%;padding:14px 16px}
-
-  /* CABECALHO */
-  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .top h1{margin:0;font-size:18px;font-weight:650;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
-  .top h1 .logo{width:30px;height:30px;border-radius:8px;background:var(--primary);color:#fff;display:grid;place-items:center}
-  .top .sub{color:var(--muted);font-size:12px;margin-top:2px}
-  .top .actions{display:flex;gap:8px;align-items:center}
-  .demo{background:var(--warn-50);color:var(--warn);border:1px solid #f3d9a8;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600}
+  .app{display:flex;flex-direction:column;gap:5px;min-height:100%;padding:4px 10px 8px}
 
   .btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:550;transition:background .15s,border-color .15s,box-shadow .15s}
   .btn:hover{background:var(--hover);border-color:#d4dae3}
@@ -49,9 +42,10 @@
   .btn.primary:hover{background:var(--primary-600)}
   .btn.sm{padding:4px 9px;font-size:12px;border-radius:7px}
   .btn svg{width:15px;height:15px;flex:none}
+  .btn.sm svg{width:13px;height:13px}
 
   /* FILTROS */
-  .filters{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .filters{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
   .f{display:flex;flex-direction:column;gap:4px}
   .f label,.f .lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .range{display:flex;align-items:center;gap:6px}
@@ -59,26 +53,21 @@
   .inp{height:32px;border:1px solid var(--line);border-radius:8px;padding:0 9px;background:#fff;min-width:0}
   .inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-50)}
   input[type=date].inp{width:130px}
-  .chk{display:flex;align-items:center;gap:8px;height:32px;cursor:pointer;user-select:none;font-weight:550}
+  .chk{display:flex;align-items:center;gap:8px;height:32px;cursor:pointer;user-select:none;font-weight:550;font-size:12px}
   .chk input{position:absolute;opacity:0;pointer-events:none}
-  .chk .sw{width:34px;height:20px;border-radius:999px;background:#cfd6df;position:relative;transition:background .15s;flex:none}
-  .chk .sw:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .15s}
+  .chk .sw{width:30px;height:18px;border-radius:999px;background:#cfd6df;position:relative;transition:background .15s;flex:none}
+  .chk .sw:after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .15s}
   .chk input:checked + .sw{background:var(--primary)}
-  .chk input:checked + .sw:after{transform:translateX(14px)}
+  .chk input:checked + .sw:after{transform:translateX(12px)}
   .chk input:focus-visible + .sw{outline:2px solid var(--primary);outline-offset:2px}
   .filters .grow{flex:1}
-  .chks{gap:0}
-  .chks .chk{height:24px;font-size:12px}
-  .chks .chk .sw{width:30px;height:18px}
-  .chks .chk .sw:after{width:14px;height:14px}
-  .chks .chk input:checked + .sw:after{transform:translateX(12px)}
 
   /* ICONE DO PAINEL + TOOLTIP */
   .brand{position:relative;z-index:45;align-self:center;outline:none;cursor:help}
   .brand .logo{width:38px;height:38px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(15,123,108,.3);transition:transform .15s}
   .brand:hover .logo,.brand:focus .logo{transform:translateY(-1px)}
   .brand .demo-dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#f59e0b;border:2px solid #fff}
-  .brand .tip{position:absolute;z-index:40;top:calc(100% + 10px);left:0;width:310px;background:#1f2937;color:#e5e7eb;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.5;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s,transform .15s,visibility .15s;pointer-events:none}
+  .brand .tip{position:absolute;z-index:40;top:calc(100% + 10px);left:0;width:320px;background:#1f2937;color:#e5e7eb;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.5;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s,transform .15s,visibility .15s;pointer-events:none}
   .brand .tip:before{content:"";position:absolute;top:-6px;left:14px;width:12px;height:12px;background:#1f2937;transform:rotate(45deg)}
   .brand:hover .tip,.brand:focus .tip{opacity:1;visibility:visible;transform:none}
   .brand .tip b{display:block;color:#fff;font-size:13px;margin-bottom:3px}
@@ -102,34 +91,50 @@
   .ms-item input{accent-color:var(--primary);margin:0}
   .ms-item b{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600;min-width:38px}
 
-  /* KPIs */
-  .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 14px}
-  .kpi .k{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  .kpi .v{font-size:20px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-  .kpi .h{font-size:11.5px;color:var(--muted);margin-top:1px}
-  .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)}
+  /* TOTAIS (COMPACTOS). OS DE NF-e FUNCIONAM COMO FILTRO */
+  .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .hint-tot{display:flex;justify-content:space-between;align-items:center;gap:6px 16px;flex-wrap:wrap}
+  .hint-tot .tot{display:flex;gap:20px;font-size:12.5px;font-weight:600}
+  .hint-tot .tot span{white-space:nowrap}
+  .hint-tot .tot b{color:var(--text);font-weight:700;margin-left:4px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px 12px;display:flex;flex-direction:column;min-width:0;position:relative}
+  .kpi .k{font-size:10.5px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi .row{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .kpi .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap}
+  .kpi .h{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)} .kpi.err .v{color:var(--err)}
+  .kpi.click{cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+  .kpi.click:hover{border-color:#c9d2dc}
+  .kpi.click:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+  .kpi.click .k:after{content:" \25BE";opacity:.0}
+  .kpi.click:hover .k:after{opacity:.6}
+  .kpi.on{border-color:var(--primary);background:var(--primary-50);box-shadow:0 0 0 1px var(--primary) inset}
+  .kpi.on .k{color:var(--primary)}
+  .kpi.on:before{content:"Filtro ativo";position:absolute;top:6px;right:10px;font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.04em}
 
   /* PAINEIS */
-  .split{display:flex;flex-direction:column;gap:12px;flex:1;min-height:440px}
-  #cardNF{flex:1 1 0;min-height:300px}
-  #cardCTe{flex:0 0 270px;display:none}
-  .split.has-cte #cardCTe{display:flex;animation:up .18s ease-out}
-  .cte-grid{display:grid;grid-template-columns:340px minmax(0,1fr);height:100%;min-height:0}
-  .cte-l{border-right:1px solid var(--line);overflow:auto;padding-bottom:10px}
-  .cte-r{overflow:auto;min-width:0}
-  .cte-r .empty{padding:24px}
-  .acts{display:flex;gap:6px}
+  .split{display:flex;flex-direction:column;gap:5px;flex:1;min-height:440px}
+  #cardCTe{flex:1 1 0;min-height:300px}
+  #cardNF{flex:0 0 280px;display:none}
+  .split.has-nf #cardNF{display:flex;animation:up .18s ease-out}
+  .sub-grid{display:grid;grid-template-columns:330px minmax(0,1fr);height:100%;min-height:0}
+  .sub-l{border-right:1px solid var(--line);overflow:auto;padding-bottom:10px}
+  .sub-r{overflow:auto;min-width:0}
+  .sub-r .empty{padding:24px}
+  .acts{display:flex;gap:6px;margin-top:10px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;overflow:hidden}
-  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
-  .card-h h2{margin:0;font-size:14px;font-weight:650;display:flex;align-items:center;gap:8px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}
+  .card-h h2{margin:0;font-size:14px;font-weight:650;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .pill{background:var(--line-soft);color:var(--muted);border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:650}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:var(--primary-50);color:var(--primary);border-radius:999px;padding:1px 4px 1px 9px;font-size:11.5px;font-weight:650}
+  .chip button{border:0;background:transparent;color:inherit;cursor:pointer;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;padding:0}
+  .chip button:hover{background:rgba(15,123,108,.15)}
   .card-h .tools{display:flex;gap:8px;align-items:center}
   .search{position:relative}
   .search svg{position:absolute;left:8px;top:8px;width:15px;height:15px;color:var(--muted-2)}
   .search .inp{padding-left:28px;width:210px}
   .card-b{flex:1;min-height:0;overflow:auto}
-  .hint{font-size:11.5px;color:var(--muted);padding:6px 14px;border-top:1px solid var(--line);background:#fbfcfd}
+  .hint{font-size:11.5px;color:var(--muted);padding:5px 14px;border-top:1px solid var(--line);background:#fbfcfd}
 
   /* TABELAS */
   table.grid{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums}
@@ -144,8 +149,11 @@
   .grid tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--primary)}
   .grid .num{text-align:right}
   .grid .mono{font-family:var(--mono);font-size:11.5px;color:#475467}
+  .grid td.mono{max-width:170px}
   .grid .cd{color:var(--muted);margin-right:4px}
   .grid tfoot td{position:sticky;bottom:0;background:#f8fafc;font-weight:700;border-top:1px solid var(--line);border-bottom:0}
+  #nfWrap .grid th{cursor:default}
+  #nfWrap .grid th .ar{display:none}
   .badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:650}
   .badge.ok{background:var(--ok-50);color:var(--ok)}
   .badge.no{background:var(--line-soft);color:var(--muted)}
@@ -153,18 +161,20 @@
   .badge.err{background:var(--err-50);color:var(--err)}
   .badge.blue{background:var(--blue-50);color:var(--blue)}
 
-  /* LADO DIREITO */
-  .nfbox{margin:12px 14px 4px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:linear-gradient(180deg,#fbfdfc,#f6faf9)}
-  .nfbox .t{font-weight:650;display:flex;justify-content:space-between;gap:8px;align-items:center}
-  .nfbox .p{color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* RESUMO DO CT-e (PAINEL INFERIOR) */
+  .box{margin:12px 14px 4px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:linear-gradient(180deg,#fbfdfc,#f6faf9)}
+  .box .t{font-weight:650}
+  .box .p{color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cmp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
-  .cmp div{background:#fff;border:1px solid var(--line-soft);border-radius:8px;padding:6px 9px}
-  .cmp span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.03em}
-  .cmp b{font-size:14px;font-variant-numeric:tabular-nums}
-  .sect{padding:10px 14px 6px;font-size:11px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  .btn-rat{border:1px solid var(--primary);color:var(--primary);background:#fff;border-radius:7px;padding:3px 9px;font-size:12px;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+  .cmp div{background:#fff;border:1px solid var(--line-soft);border-radius:8px;padding:6px 9px;min-width:0}
+  .cmp span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.03em;white-space:nowrap}
+  .cmp b{font-size:13.5px;font-variant-numeric:tabular-nums}
+  .btn-rat{border:1px solid var(--primary);color:var(--primary);background:#fff;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
   .btn-rat:hover{background:var(--primary);color:#fff}
   .btn-rat svg{width:13px;height:13px}
+  .ico{border:1px solid var(--line);background:#fff;border-radius:6px;width:24px;height:22px;display:inline-grid;place-items:center;cursor:pointer;color:var(--muted);vertical-align:middle;margin-left:6px;padding:0}
+  .ico:hover{color:var(--primary);border-color:var(--primary)}
+  .ico svg{width:12px;height:12px}
 
   .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;color:var(--muted);padding:40px 24px;height:100%}
   .empty svg{width:42px;height:42px;color:#c3cad4}
@@ -190,16 +200,14 @@
   .modal-b{overflow:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:14px}
   .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
   .pane{border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
-  .pane-h{padding:9px 12px;font-weight:650;display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-bottom:1px solid var(--line)}
+  .pane-h{padding:9px 12px;font-weight:650;display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f8fafc;border-bottom:1px solid var(--line)}
   .pane-b{overflow:auto;max-height:44vh}
   .pane .grid th{cursor:default;padding:7px 8px}
-  .pane .grid th .ar,#cteWrap .grid th .ar{display:none}
+  .pane .grid th .ar{display:none}
   .pane .grid td{white-space:normal;max-width:220px;padding:6px 8px;vertical-align:top}
   .pane .grid td.num{white-space:nowrap}
   .pane .grid tbody tr{cursor:default}
-  .grid td.mono{max-width:170px}
   .grid tr.dif td{background:var(--err-50)!important}
-  .grid tr.okr td.st{color:var(--ok)}
   .diff-pos{color:var(--err);font-weight:650}
   .muted{color:var(--muted)}
 
@@ -208,12 +216,48 @@
   .toast.err{background:var(--err)}
   .toast.show{display:block;animation:up .2s ease-out}
 
+  /* =========================================================================
+     DENSIDADE COMPACTA: FONTES E ESPACAMENTOS MENORES PARA CABER MAIS LINHAS DE CT-e
+     (SOBRESCREVE OS TAMANHOS DEFINIDOS ACIMA; PARA VOLTAR AO TAMANHO ANTERIOR, REMOVER ESTE BLOCO)
+     ========================================================================= */
+  body{font-size:11.5px;line-height:1.3}
+  .btn{padding:4px 10px;border-radius:7px}
+  .btn svg{width:13px;height:13px}
+  .btn.sm{padding:2px 7px;font-size:11px}
+  .filters{padding:6px 10px;gap:6px 12px}
+  .f{gap:2px}
+  .f label,.f .lbl{font-size:10px}
+  .inp{height:27px;padding:0 7px;border-radius:7px}
+  input[type=date].inp{width:118px}
+  .ms{width:200px}
+  .ms-btn{height:27px;padding:0 7px}
+  .brand .logo{width:32px;height:32px;border-radius:8px}
+  .kpi{padding:4px 10px}
+  .kpi .k{font-size:9.5px}
+  .kpi .v{font-size:14px}
+  .kpi .h{font-size:10.5px}
+  .kpi.on:before{top:4px;font-size:9px}
+  .card-h{padding:5px 12px}
+  .card-h h2{font-size:12.5px}
+  .pill,.chip{font-size:10.5px}
+  .search svg{top:6px;width:13px;height:13px}
+  .search .inp{width:190px;padding-left:25px}
+  .hint{padding:3px 12px;font-size:10.5px}
+  .hint-tot .tot{font-size:11.5px}
+  .grid th{padding:5px 8px;font-size:10px}
+  .grid td{padding:3px 8px;font-size:11.5px}
+  .grid .mono{font-size:10.5px}
+  .badge{padding:0 6px;font-size:10.5px}
+  .box{margin:8px 10px 4px;padding:8px 10px}
+  .cmp b{font-size:12.5px}
+  .btn-rat{padding:3px 8px;font-size:11px}
+
   @media (max-width:1100px){
     .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
     .two{grid-template-columns:minmax(0,1fr)}
-    .cte-grid{grid-template-columns:minmax(0,1fr)}
-    .cte-l{border-right:0;border-bottom:1px solid var(--line)}
-    #cardCTe{flex-basis:auto;max-height:520px}
+    .sub-grid{grid-template-columns:minmax(0,1fr)}
+    .sub-l{border-right:0;border-bottom:1px solid var(--line)}
+    #cardNF{flex-basis:auto;max-height:540px}
   }
   @media (max-width:640px){
     .app{padding:12px}
@@ -232,12 +276,13 @@
       <span class="logo"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></span>
       <span class="demo-dot" id="demoTag" style="display:none" title="Modo demonstração"></span>
       <div class="tip" role="tooltip" id="brandTip">
-        <b>Notas de Compra x CT-e</b>
-        Acompanha o frete das notas de compra: mostra o CT-e vinculado a cada nota (TGFNCT) e compara o rateio da NF com o rateio do CT-e.
+        <b>CT-e x Notas de Compra</b>
+        Acompanha os CT-e de entrada (frete): mostra a NF-e de compra vinculada a cada CT-e (TGFNCT) e compara o rateio da NF-e com o rateio do CT-e.
         <ul>
-          <li>1 clique na nota: CT-e vinculado abaixo</li>
-          <li>2 cliques: abre a nota na Central</li>
-          <li>Ver Rateio: comparativo NF x CT-e</li>
+          <li>1 clique no CT-e: NF-e vinculada abaixo</li>
+          <li>2 cliques no CT-e ou na NF-e: abre na Central</li>
+          <li>Ver Rateio: comparativo NF-e x CT-e</li>
+          <li>Totais (sem rateio / com / sem NF-e): clique para filtrar a lista</li>
         </ul>
         <span class="upd" id="lastUpd"></span>
       </div>
@@ -247,64 +292,65 @@
       <div class="range"><input type="date" class="inp" id="dtEntIni"><span>até</span><input type="date" class="inp" id="dtEntFin"></div>
     </div>
     <div class="f">
-      <label for="dtNegIni">Período Negociação</label>
-      <div class="range"><input type="date" class="inp" id="dtNegIni"><span>até</span><input type="date" class="inp" id="dtNegFin"></div>
-    </div>
-    <div class="f">
-      <span class="lbl">TOPs Compra</span>
-      <div class="ms" id="msTop">
-        <button type="button" class="ms-btn" id="msTopBtn"><span class="txt">Todas as TOPs</span><span class="cnt" style="display:none"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+      <span class="lbl" title="TOP do próprio CT-e (modelo 57)">TOPs Compra (CT-e)</span>
+      <div class="ms" id="msTopCte">
+        <button type="button" class="ms-btn"><span class="txt">Todas as TOPs</span><span class="cnt" style="display:none"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="ms-pop">
-          <input type="text" class="inp" id="msTopSearch" placeholder="Buscar TOP...">
-          <div class="ms-tools"><a id="msAll">Marcar todas</a><a id="msNone">Limpar</a></div>
-          <div class="ms-list" id="msTopList"></div>
+          <input type="text" class="inp ms-search" placeholder="Buscar TOP...">
+          <div class="ms-tools"><a class="ms-all">Marcar todas</a><a class="ms-none">Limpar</a></div>
+          <div class="ms-list"></div>
         </div>
       </div>
     </div>
-    <div class="f chks">
-      <label class="chk"><input type="checkbox" id="apenasCte"><span class="sw"></span>Apenas NF-e com CT-e?</label>
-      <label class="chk"><input type="checkbox" id="apenasSemRat"><span class="sw"></span>Apenas NF-e com CT-e sem rateio?</label>
+    <div class="f">
+      <span class="lbl" title="CT-e vinculados a NF-e destas TOPs (modelo 55)">TOPs Compra (NF-e)</span>
+      <div class="ms" id="msTopNf">
+        <button type="button" class="ms-btn"><span class="txt">Todas as TOPs</span><span class="cnt" style="display:none"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="ms-pop">
+          <input type="text" class="inp ms-search" placeholder="Buscar TOP...">
+          <div class="ms-tools"><a class="ms-all">Marcar todas</a><a class="ms-none">Limpar</a></div>
+          <div class="ms-list"></div>
+        </div>
+      </div>
     </div>
     <div class="grow"></div>
     <div class="f">
       <div style="display:flex;gap:8px">
         <button class="btn" id="btnLimpar">Limpar</button>
-        <button class="btn" id="btnCsv" title="Exportar a lista de notas (CSV)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
+        <button class="btn" id="btnCsv" title="Exportar a lista de CT-e (CSV)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
         <button class="btn primary" id="btnAplicar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Aplicar</button>
       </div>
     </div>
   </div>
 
-  <!-- KPIs -->
+  <!-- TOTAIS -->
   <div class="kpis">
-    <div class="kpi"><div class="k">Notas de compra</div><div class="v" id="kQtd">-</div><div class="h">com valor de frete</div></div>
-    <div class="kpi"><div class="k">Valor das notas</div><div class="v" id="kVlr">-</div><div class="h" id="kVlrH">&nbsp;</div></div>
-    <div class="kpi"><div class="k">Frete nas notas</div><div class="v" id="kFrete">-</div><div class="h" id="kFreteH">&nbsp;</div></div>
-    <div class="kpi ok"><div class="k">Com CT-e vinculado</div><div class="v" id="kCom">-</div><div class="h" id="kComH">&nbsp;</div></div>
-    <div class="kpi warn"><div class="k">Sem CT-e vinculado</div><div class="v" id="kSem">-</div><div class="h" id="kSemH">&nbsp;</div></div>
+    <div class="kpi err click" id="kpiRat" data-filtro="semrat" tabindex="0" role="button" title="Filtrar os CT-e sem rateio"><div class="k">CT-e sem rateio</div><div class="row"><span class="v" id="kRat">-</span><span class="h" id="kRatH"></span></div></div>
+    <div class="kpi ok click" id="kpiCom" data-filtro="com" tabindex="0" role="button" title="Filtrar os CT-e com NF-e vinculada"><div class="k">Com NF-e vinculado</div><div class="row"><span class="v" id="kCom">-</span><span class="h" id="kComH"></span></div></div>
+    <div class="kpi warn click" id="kpiSem" data-filtro="sem" tabindex="0" role="button" title="Filtrar os CT-e sem NF-e vinculada"><div class="k">Sem NF-e vinculado</div><div class="row"><span class="v" id="kSem">-</span><span class="h" id="kSemH"></span></div></div>
   </div>
 
-  <!-- PAINEIS: NF (TOPO) / CTE (INFERIOR, APARECE AO CLICAR NA NF) -->
+  <!-- PAINEIS: CT-e (TOPO) / NF-e VINCULADA (INFERIOR, APARECE AO CLICAR NO CT-e) -->
   <div class="split" id="split">
-    <div class="card" id="cardNF">
+    <div class="card" id="cardCTe">
       <div class="card-h">
-        <h2>Notas de Compra <span class="pill" id="nfCount">0</span></h2>
+        <h2>Conhecimentos de Transporte (CT-e) <span class="pill" id="cteCount">0</span> <span id="cteChip"></span></h2>
         <div class="tools">
-          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" class="inp" id="nfSearch" placeholder="Filtrar na lista..."></div>
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" class="inp" id="cteSearch" placeholder="Filtrar na lista..."></div>
         </div>
       </div>
-      <div class="card-b" id="nfWrap"></div>
-      <div class="hint">1 clique: mostra o CT-e vinculado abaixo &middot; 2 cliques: abre a nota na Central</div>
+      <div class="card-b" id="cteWrap"></div>
+      <div class="hint hint-tot"><span>1 clique: mostra a NF-e vinculada abaixo &middot; 2 cliques: abre o CT-e na Central</span><span class="tot" id="cteTot"></span></div>
       <div class="loading"><div class="spin"></div></div>
     </div>
 
-    <div class="card" id="cardCTe">
+    <div class="card" id="cardNF">
       <div class="card-h">
-        <h2>CT-e vinculado <span class="pill" id="cteCount">0</span> <span class="muted" id="cteNfRef" style="font-weight:500;font-size:12.5px"></span></h2>
-        <button class="x" id="cteClose" title="Fechar e voltar à lista completa (Esc)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <h2>NF-e vinculada <span class="pill" id="nfCount">0</span> <span class="muted" id="nfCteRef" style="font-weight:500;font-size:12.5px"></span></h2>
+        <button class="x" id="nfClose" title="Fechar e voltar à lista completa (Esc)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
-      <div class="card-b" id="cteWrap"></div>
-      <div class="hint">Ver Rateio: compara o rateio da NF x CT-e &middot; Abrir CT-e (ou 2 cliques na linha): abre o CT-e na Central</div>
+      <div class="card-b" id="nfWrap"></div>
+      <div class="hint">Ver Rateio: compara o rateio da NF-e x CT-e &middot; Abrir NF-e (ou 2 cliques na linha): abre a NF-e na Central</div>
       <div class="loading"><div class="spin"></div></div>
     </div>
   </div>
@@ -315,7 +361,7 @@
   <div class="modal">
     <div class="modal-h">
       <div>
-        <h3 id="ratTitle">Rateio NF x CT-e</h3>
+        <h3 id="ratTitle">Rateio NF-e x CT-e</h3>
         <div class="s" id="ratSub"></div>
       </div>
       <button class="x" id="ratClose" title="Fechar (Esc)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
@@ -335,7 +381,7 @@
      CONFIGURACAO
      ========================================================================= */
   var CFG = {
-    //RESOURCE ID DA CENTRAL DE COMPRAS (CONFIRMADO NO AMBIENTE AGRISAN), USADO PARA ABRIR NF E CT-e
+    //RESOURCE ID DA CENTRAL DE COMPRAS (CONFIRMADO NO AMBIENTE AGRISAN), USADO PARA ABRIR NF-e E CT-e
     TELA_CENTRAL: 'br.com.sankhya.com.mov.CentralNotas_COMPRA',
     MAX_LINHAS: 3000,
     TOL_PERC: 0.01,  //TOLERANCIA (PONTOS PERCENTUAIS) PARA CONSIDERAR O RATEIO DIVERGENTE
@@ -344,12 +390,24 @@
     FONTE: 'auto'
   };
 
+  var ICO_ABRIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+
   /* =========================================================================
      CONSULTAS (ORACLE). VALORES DOS FILTROS SAO VALIDADOS ANTES DE ENTRAR NO SQL
      VINCULO NF x CTE: TGFNCT (NCT.NUNOTA = CTE / NCT.CHAVENFE + NCT.NUMERO = NF)
      ========================================================================= */
   var SQL = {
-    tops: function(){
+    //TOPs DE COMPRA MODELO 57 (CT-e), NA VERSAO MAIS RECENTE
+    topsCte: function(){
+      return "SELECT TPO.CODTIPOPER, TPO.DESCROPER\n"
+        + "FROM TGFTOP TPO\n"
+        + "WHERE TPO.DHALTER = (SELECT MAX(DHALTER) FROM TGFTOP WHERE CODTIPOPER = TPO.CODTIPOPER)\n"
+        + "    AND TPO.CODMODDOC = 57\n"
+        + "    AND TPO.TIPMOV = 'C'\n"
+        + "ORDER BY 2";
+    },
+
+    topsNf: function(){
       //TOPs DE COMPRA MODELO 55 (NF-e), NA VERSAO MAIS RECENTE
       return "SELECT T.CODTIPOPER, T.DESCROPER, T.CODMODDOC\n"
         + "FROM TGFTOP T\n"
@@ -359,101 +417,100 @@
         + "ORDER BY 2";
     },
 
-    //COLUNAS COMUNS DAS GRADES NF E CTE (ALIAS N = NOTA)
-    colunas: function(chave){
-      return "N.NUNOTA, N.NUMNOTA, N.SERIENOTA, N.CODEMP, " + chave + " AS CHAVE,\n"
-        + "TO_CHAR(N.DTNEG, 'DD/MM/YYYY') AS DTNEG, TO_CHAR(N.DTENTSAI, 'DD/MM/YYYY') AS DTENTSAI,\n"
-        + "N.CODNAT, NAT.DESCRNAT, N.CODCENCUS, CUS.DESCRCENCUS, N.CODPROJ, PRJ.IDENTIFICACAO AS DESCRPROJ,\n"
-        + "N.VLRNOTA, NVL(N.VLRFRETE, 0) AS VLRFRETE, N.CODTIPOPER, TPO.DESCROPER,\n"
-        + "CASE WHEN N.STATUSNOTA = 'L' THEN 'Sim' ELSE 'Não' END AS CONFIRMADA,\n"
-        + "N.CODPARC, PAR.NOMEPARC\n";
+    //DESCRICOES DOS CAMPOS DE FRETE DA TGFCAB
+    //DESCRICOES OFICIAIS DAS OPCOES DOS CAMPOS (DICIONARIO DO SANKHYA - F_DESCROPC)
+    tipFrete: function(a){
+      return "NVL(F_DESCROPC('TGFCAB', 'TIPFRETE', " + a + ".TIPFRETE), " + a + ".TIPFRETE)";
     },
-    joins: function(){
-      return "INNER JOIN TGFTOP TPO ON TPO.CODTIPOPER = N.CODTIPOPER AND TPO.DHALTER = N.DHTIPOPER\n"
-        + "INNER JOIN TGFPAR PAR ON PAR.CODPARC = N.CODPARC\n"
-        + "LEFT JOIN TGFNAT NAT ON NAT.CODNAT = N.CODNAT\n"
-        + "LEFT JOIN TSICUS CUS ON CUS.CODCENCUS = N.CODCENCUS\n"
-        + "LEFT JOIN TCSPRJ PRJ ON PRJ.CODPROJ = N.CODPROJ\n";
+    //EX.: 'C' = "CIF - Contratação do Frete por conta do Remetente". NULO OU 'S' (SEM FRETE) = "Não informado"
+    cifFob: function(a){
+      return "CASE WHEN " + a + ".CIF_FOB IS NULL OR " + a + ".CIF_FOB = 'S' THEN 'Não informado'"
+        + " ELSE NVL(F_DESCROPC('TGFCAB', 'CIF_FOB', " + a + ".CIF_FOB), " + a + ".CIF_FOB) END";
     },
 
-    nfs: function(f){
+    /* LISTA PRINCIPAL: CT-e DO PERIODO, UMA LINHA POR CT-e. SEM SUBCONSULTAS CORRELACIONADAS:
+       - CT:   CT-e DO PERIODO (FILTROS RODAM UMA VEZ)
+       - VINC: NF-e VINCULADAS A CADA CT-e (TGFNCT) EM UM UNICO JOIN
+       - QNF:  QUANTIDADE DE NF-e POR CT-e
+       - RAT:  QUANTIDADE DE LINHAS DE RATEIO (TGFRAV) POR CT-e */
+    ctes: function(f){
       var w = [];
       if(f.entIni) w.push("AND N.DTENTSAI >= " + toDateSql(f.entIni));
       if(f.entFin) w.push("AND N.DTENTSAI < " + toDateSql(f.entFin) + " + 1");
-      if(f.negIni) w.push("AND N.DTNEG >= " + toDateSql(f.negIni));
-      if(f.negFin) w.push("AND N.DTNEG < " + toDateSql(f.negFin) + " + 1");
-      if(f.tops.length) w.push("AND N.CODTIPOPER IN (" + f.tops.join(",") + ")");
+      if(f.topsCte.length) w.push("AND N.CODTIPOPER IN (" + f.topsCte.join(",") + ")");
 
-      //SEM SUBCONSULTAS CORRELACIONADAS: OS FILTROS RODAM UMA VEZ NA CTE "NF", O VINCULO COM A TGFNCT
-      //E RESOLVIDO EM UM UNICO JOIN (HASH) E AGREGADO POR NF. O SELECT EXTERNO MANTEM O SQL INICIANDO
-      //COM SELECT (ALGUMAS APIS DO SANKHYA SO ACEITAM SELECT) E APLICA O LIMITE DE LINHAS
+      var fim = [];
+      if(f.topsNf.length) fim.push("N.NUNOTA IN (SELECT V.NUNOTACTE FROM VINC V WHERE V.TOPNF IN (" + f.topsNf.join(",") + "))");
+
       return "SELECT * FROM (\n"
-        + "WITH NF AS (\n"
+        + "WITH CT AS (\n"
         + "  SELECT /*+ MATERIALIZE */\n"
-        + "         N.NUNOTA, N.NUMNOTA, N.SERIENOTA, N.CODEMP, N.CHAVENFE, N.DTNEG, N.DTENTSAI,\n"
-        + "         N.CODNAT, N.CODCENCUS, N.CODPROJ, N.VLRNOTA, N.VLRFRETE, N.CODTIPOPER,\n"
-        + "         N.STATUSNOTA, N.CODPARC, TPO.DESCROPER\n"
+        + "         N.NUNOTA, N.NUMNOTA, N.SERIENOTA, N.CODEMP, NVL(N.CHAVECTE, N.CHAVENFE) AS CHAVE, N.DTNEG, N.DTENTSAI,\n"
+        + "         N.CODNAT, N.CODCENCUS, N.CODPROJ, N.VLRNOTA, N.CODTIPOPER, N.STATUSNOTA, N.CODPARC,\n"
+        + "         N.TIPFRETE, N.CIF_FOB, TPO.DESCROPER\n"
         + "    FROM TGFCAB N\n"
         + "   INNER JOIN TGFTOP TPO ON TPO.CODTIPOPER = N.CODTIPOPER AND TPO.DHALTER = N.DHTIPOPER\n"
         + "   WHERE N.TIPMOV = 'C'\n"
-        + "     AND N.VLRFRETE <> 0\n"
-        + "     AND NVL(TPO.CODMODDOC, 0) <> 57\n"
+        + "     AND TPO.CODMODDOC = 57\n"
         + "     " + w.join("\n     ") + "\n"
         + "),\n"
         + "VINC AS (\n"
-        + "  SELECT DISTINCT NF.NUNOTA AS NUNOTANF, CTE.NUNOTA AS NUNOTACTE, NVL(CTE.VLRNOTA, 0) AS VLRCTE\n"
-        + "    FROM NF\n"
-        + "   INNER JOIN TGFNCT NCT ON NCT.CHAVENFE = NF.CHAVENFE\n"
-        + "   INNER JOIN TGFCAB CTE ON CTE.NUNOTA = NCT.NUNOTA AND CTE.TIPMOV = 'C'\n"
-        + "   WHERE NF.CHAVENFE IS NOT NULL\n"
-        + "     AND TO_NUMBER(NCT.NUMERO) = NF.NUMNOTA\n"
+        + "  SELECT DISTINCT C.NUNOTA AS NUNOTACTE, NF.NUNOTA AS NUNOTANF, NF.CODTIPOPER AS TOPNF\n"
+        + "    FROM CT C\n"
+        + "   INNER JOIN TGFNCT NCT ON NCT.NUNOTA = C.NUNOTA\n"
+        + "   INNER JOIN TGFCAB NF ON NF.CHAVENFE = NCT.CHAVENFE AND NF.NUMNOTA = TO_NUMBER(NCT.NUMERO) AND NF.TIPMOV = 'C'\n"
         + "),\n"
-        //CTEs DO PERIODO QUE POSSUEM RATEIO (TGFRAV ORIGEM 'E')
-        + "RATCTE AS (\n"
-        + "  SELECT RAV.NUFIN AS NUNOTACTE\n"
-        + "    FROM (SELECT DISTINCT NUNOTACTE FROM VINC) V\n"
-        + "   INNER JOIN TGFRAV RAV ON RAV.ORIGEM = 'E' AND RAV.NUFIN = V.NUNOTACTE\n"
+        + "QNF AS (\n"
+        + "  SELECT NUNOTACTE, COUNT(*) AS QTDNF FROM VINC GROUP BY NUNOTACTE\n"
+        + "),\n"
+        + "RAT AS (\n"
+        + "  SELECT RAV.NUFIN AS NUNOTACTE, COUNT(*) AS QTDRAT\n"
+        + "    FROM CT C\n"
+        + "   INNER JOIN TGFRAV RAV ON RAV.ORIGEM = 'E' AND RAV.NUFIN = C.NUNOTA\n"
         + "   GROUP BY RAV.NUFIN\n"
-        + "),\n"
-        + "RESUMO AS (\n"
-        + "  SELECT V.NUNOTANF, COUNT(*) AS QTDCTE, SUM(V.VLRCTE) AS VLRCTE,\n"
-        + "         SUM(CASE WHEN RC.NUNOTACTE IS NULL THEN 1 ELSE 0 END) AS QTDCTESEMRAT\n"
-        + "    FROM VINC V\n"
-        + "    LEFT JOIN RATCTE RC ON RC.NUNOTACTE = V.NUNOTACTE\n"
-        + "   GROUP BY V.NUNOTANF\n"
         + ")\n"
-        + "SELECT N.NUNOTA, N.NUMNOTA, N.SERIENOTA, N.CODEMP, N.CHAVENFE AS CHAVE,\n"
+        + "SELECT N.NUNOTA, N.NUMNOTA, N.SERIENOTA, N.CODEMP, EMP.NOMEFANTASIA, N.CHAVE,\n"
         + "       TO_CHAR(N.DTNEG, 'DD/MM/YYYY') AS DTNEG, TO_CHAR(N.DTENTSAI, 'DD/MM/YYYY') AS DTENTSAI,\n"
         + "       N.CODNAT, NAT.DESCRNAT, N.CODCENCUS, CUS.DESCRCENCUS, N.CODPROJ, PRJ.IDENTIFICACAO AS DESCRPROJ,\n"
-        + "       N.VLRNOTA, NVL(N.VLRFRETE, 0) AS VLRFRETE, N.CODTIPOPER, N.DESCROPER,\n"
+        + "       N.VLRNOTA, NVL(Q.QTDNF, 0) AS QTDNF, NVL(R.QTDRAT, 0) AS QTDRAT,\n"
+        + "       N.CODTIPOPER, N.DESCROPER,\n"
         + "       CASE WHEN N.STATUSNOTA = 'L' THEN 'Sim' ELSE 'Não' END AS CONFIRMADA,\n"
         + "       N.CODPARC, PAR.NOMEPARC,\n"
-        + "       NVL(R.QTDCTE, 0) AS QTDCTE, NVL(R.VLRCTE, 0) AS VLRCTE, NVL(R.QTDCTESEMRAT, 0) AS QTDCTESEMRAT\n"
-        + "  FROM NF N\n"
-        + "  " + (f.apenasCte || f.apenasSemRat ? "INNER" : "LEFT") + " JOIN RESUMO R ON R.NUNOTANF = N.NUNOTA\n"
+        + "       " + SQL.tipFrete('N') + " AS TIPFRETE,\n"
+        + "       " + SQL.cifFob('N') + " AS CIFFOB\n"
+        + "  FROM CT N\n"
+        + "  LEFT JOIN QNF Q ON Q.NUNOTACTE = N.NUNOTA\n"
+        + "  LEFT JOIN RAT R ON R.NUNOTACTE = N.NUNOTA\n"
         + " INNER JOIN TGFPAR PAR ON PAR.CODPARC = N.CODPARC\n"
+        + "  LEFT JOIN TSIEMP EMP ON EMP.CODEMP = N.CODEMP\n"
         + "  LEFT JOIN TGFNAT NAT ON NAT.CODNAT = N.CODNAT\n"
         + "  LEFT JOIN TSICUS CUS ON CUS.CODCENCUS = N.CODCENCUS\n"
         + "  LEFT JOIN TCSPRJ PRJ ON PRJ.CODPROJ = N.CODPROJ\n"
-        + (f.apenasSemRat ? " WHERE R.QTDCTESEMRAT > 0\n" : "")
+        + (fim.length ? " WHERE " + fim.join("\n   AND ") + "\n" : "")
         + ") X\n"
         + "WHERE ROWNUM <= " + (CFG.MAX_LINHAS + 1);
     },
 
-    //CTE(S) VINCULADO(S) A NF (MESMO JOIN DO cabEPJ, INVERTIDO)
-    ctes: function(nuNotaNF){
-      return "SELECT " + SQL.colunas("NVL(N.CHAVECTE, N.CHAVENFE)") + ",\n"
-        + "(SELECT COUNT(1) FROM TGFRAV RAV WHERE RAV.ORIGEM = 'E' AND RAV.NUFIN = N.NUNOTA) AS QTDRAT,\n"
-        + "(SELECT COUNT(1) FROM TGFNCT NC2 WHERE NC2.NUNOTA = N.NUNOTA) AS QTDNF\n"
-        + "FROM TGFCAB N\n"
-        + SQL.joins()
-        + "WHERE N.TIPMOV = 'C'\n"
-        + "AND TPO.CODMODDOC = 57\n"
-        + "AND N.NUNOTA IN (SELECT NCT.NUNOTA\n"
-        + "                   FROM TGFNCT NCT\n"
-        + "                   INNER JOIN TGFCAB NF ON NF.NUMNOTA = TO_NUMBER(NCT.NUMERO) AND NF.CHAVENFE = NCT.CHAVENFE\n"
-        + "                  WHERE NF.NUNOTA = " + int(nuNotaNF) + ")\n"
-        + "ORDER BY N.DTNEG, N.NUNOTA";
+    //NF-e VINCULADA(S) AO CT-e (MESMO JOIN DO cabEPJ). POUCAS LINHAS POR CT-e
+    nfs: function(nuNotaCTe){
+      return "SELECT N.NUNOTA, N.NUMNOTA, N.SERIENOTA, N.CODEMP, EMP.NOMEFANTASIA, N.CHAVENFE AS CHAVE,\n"
+        + "       TO_CHAR(N.DTENTSAI, 'DD/MM/YYYY') AS DTENTSAI,\n"
+        + "       N.CODNAT, NAT.DESCRNAT, N.CODCENCUS, CUS.DESCRCENCUS, N.CODPROJ, PRJ.IDENTIFICACAO AS DESCRPROJ,\n"
+        + "       N.VLRNOTA, NVL(N.VLRFRETE, 0) AS VLRFRETE, N.CODTIPOPER, TPO.DESCROPER,\n"
+        + "       CASE WHEN N.STATUSNOTA = 'L' THEN 'Sim' ELSE 'Não' END AS CONFIRMADA,\n"
+        + "       N.CODPARC, PAR.NOMEPARC\n"
+        + "  FROM TGFCAB N\n"
+        + " INNER JOIN TGFTOP TPO ON TPO.CODTIPOPER = N.CODTIPOPER AND TPO.DHALTER = N.DHTIPOPER\n"
+        + " INNER JOIN TGFPAR PAR ON PAR.CODPARC = N.CODPARC\n"
+        + "  LEFT JOIN TSIEMP EMP ON EMP.CODEMP = N.CODEMP\n"
+        + "  LEFT JOIN TGFNAT NAT ON NAT.CODNAT = N.CODNAT\n"
+        + "  LEFT JOIN TSICUS CUS ON CUS.CODCENCUS = N.CODCENCUS\n"
+        + "  LEFT JOIN TCSPRJ PRJ ON PRJ.CODPROJ = N.CODPROJ\n"
+        + " WHERE N.NUNOTA IN (SELECT NF.NUNOTA\n"
+        + "                      FROM TGFNCT NCT\n"
+        + "                     INNER JOIN TGFCAB NF ON NF.CHAVENFE = NCT.CHAVENFE AND NF.NUMNOTA = TO_NUMBER(NCT.NUMERO) AND NF.TIPMOV = 'C'\n"
+        + "                     WHERE NCT.NUNOTA = " + int(nuNotaCTe) + ")\n"
+        + " ORDER BY N.NUMNOTA, N.NUNOTA";
     },
 
     //RATEIO (TGFRAV ORIGEM 'E') DE TODAS AS NFs DO CTE + RATEIO DO CTE.
@@ -520,11 +577,12 @@
   function brl(v){ return 'R$ ' + money(v); }
   function perc(v){ return fmtPerc.format(num(v)) + '%'; }
   function dateKey(s){ var m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(s || ''); return m ? m[3] + m[2] + m[1] : ''; }
+  function vazio(v){ return v === null || v === undefined || v === ''; }
   function codDesc(cod, desc){
-    if(cod === null || cod === undefined || cod === '') return '';
+    if(vazio(cod)) return '';
     return '<span class="cd">' + esc(cod) + '</span>' + esc(desc || '');
   }
-  function codDescTxt(cod, desc){ return (cod === null || cod === undefined || cod === '') ? '' : cod + ' - ' + (desc || ''); }
+  function codDescTxt(cod, desc){ return vazio(cod) ? '' : cod + ' - ' + (desc || ''); }
 
   /* NORMALIZA O RETORNO DO executeQuery PARA [{COLUNA: valor}] COM CHAVES EM MAIUSCULO.
      ACEITA OS FORMATOS CONHECIDOS DO SANKHYA:
@@ -586,8 +644,8 @@
   //RETORNA AS LINHAS; A PROPRIEDADE "reconhecido" INDICA SE O FORMATO FOI ENTENDIDO
   //(UM ARRAY VAZIO RECONHECIDO = CONSULTA SEM REGISTROS; NAO RECONHECIDO = TENTA OUTRA FORMA DE CONSULTA)
   function normalize(raw){
-    var vazio = []; vazio.reconhecido = false;
-    if(raw === null || raw === undefined || raw === '') return vazio;
+    var nada = []; nada.reconhecido = false;
+    if(raw === null || raw === undefined || raw === '') return nada;
     var d = raw;
     if(d && d.nodeType) d = new XMLSerializer().serializeToString(d);
     if(typeof d === 'string'){
@@ -716,14 +774,14 @@
   }
   function busy(id, on){ $(id).classList.toggle('busy', !!on); }
 
-  //ABRE A NOTA (NF OU CTE) NA CENTRAL DE COMPRAS - MESMO FORMATO DO LINK GERADO PELO SANKHYA:
+  //ABRE A NOTA (CT-e OU NF-e) NA CENTRAL DE COMPRAS - MESMO FORMATO DO LINK GERADO PELO SANKHYA:
   //"/mge/system.jsp#app/" + Base64(TELA) + "/" + Base64({"NUNOTA":n, "TIPMOV":"C", "ehPedidoW":false, "CODTIPOPER":t, "TIPOPORTAL":"PC", "forceNewHash":ts}) + "&pk-refresh=" + ts
   function abrirCentral(nuNota){
     var nu = int(nuNota);
-    var reg = state.nfs.concat(state.ctes).filter(function(r){ return num(r.NUNOTA) === nu; })[0] || {};
+    var reg = state.ctes.concat(state.nfs).filter(function(r){ return num(r.NUNOTA) === nu; })[0] || {};
     var ts = Date.now();
     var filtro = '{"NUNOTA":' + nu + ', "TIPMOV":"C", "ehPedidoW":false'
-      + (reg.CODTIPOPER !== undefined && reg.CODTIPOPER !== null && reg.CODTIPOPER !== '' ? ', "CODTIPOPER":' + int(reg.CODTIPOPER) : '')
+      + (vazio(reg.CODTIPOPER) ? '' : ', "CODTIPOPER":' + int(reg.CODTIPOPER))
       + ', "TIPOPORTAL":"PC", "forceNewHash":' + ts + '}';
     var link = '/mge/system.jsp#app/' + btoa(CFG.TELA_CENTRAL) + '/' + btoa(filtro) + '&pk-refresh=' + ts;
     if(DEMO){ toast('Demonstração: abriria ' + link); return; }
@@ -738,71 +796,70 @@
      ESTADO
      ========================================================================= */
   var state = {
-    tops: [], topsSel: {},
-    nfs: [], nfView: [], nfSort: {k:'DTENTSAI', dir:-1}, nfSearch: '',
-    nfSel: null, ctes: [], cacheCte: {}
+    ctes: [], cteView: [], cteSort: {k:'DTENTSAI', dir:-1}, cteSearch: '',
+    filtroNF: null,  //null | 'com' | 'sem' (CLIQUE NOS TOTAIS "COM / SEM NF-e VINCULADO")
+    filtroRat: false, //true = SO CT-e SEM RATEIO (CLIQUE NO TOTAL "CT-e SEM RATEIO"). COMBINA COM O filtroNF
+    cteSel: null, nfs: [], cacheNF: {}
   };
 
   /* =========================================================================
      COLUNAS DAS GRADES
      ========================================================================= */
-  var COLS_BASE = [
+  function colCodDesc(k, t, cod, desc){
+    return {k:k, t:t, html:function(r){ return codDesc(r[cod], r[desc]); }, txt:function(r){ return codDescTxt(r[cod], r[desc]); }};
+  }
+  var COL_CONF = {k:'CONFIRMADA', t:'Confirmada?', html:function(r){ return r.CONFIRMADA === 'Sim' ? '<span class="badge ok">Sim</span>' : '<span class="badge no">Não</span>'; }};
+
+  var COLS_CTE = [
     {k:'NUNOTA', t:'Nro. Único', num:true},
     {k:'NUMNOTA', t:'Nro. Nota', num:true},
     {k:'SERIENOTA', t:'Série'},
-    {k:'CODEMP', t:'Cód. Empresa', num:true},
-    {k:'CHAVE', t:'Chave', cls:'mono'},
-    {k:'DTNEG', t:'Dt. Neg.', date:true},
-    {k:'DTENTSAI', t:'Dt. Entrada/Saída', date:true},
-    {k:'CODNAT', t:'Natureza', html:function(r){ return codDesc(r.CODNAT, r.DESCRNAT); }, txt:function(r){ return codDescTxt(r.CODNAT, r.DESCRNAT); }},
-    {k:'CODCENCUS', t:'Centro de Resultado', html:function(r){ return codDesc(r.CODCENCUS, r.DESCRCENCUS); }, txt:function(r){ return codDescTxt(r.CODCENCUS, r.DESCRCENCUS); }},
-    {k:'CODPROJ', t:'Projeto', html:function(r){ return codDesc(r.CODPROJ, r.DESCRPROJ); }, txt:function(r){ return codDescTxt(r.CODPROJ, r.DESCRPROJ); }},
-    {k:'VLRNOTA', t:'Valor da Nota', num:true, money:true},
-    {k:'CODTIPOPER', t:'Cód. TOP', num:true},
-    {k:'DESCROPER', t:'Tipo Operação'},
-    {k:'CONFIRMADA', t:'Confirmada?', html:function(r){ return r.CONFIRMADA === 'Sim' ? '<span class="badge ok">Sim</span>' : '<span class="badge no">Não</span>'; }},
-    {k:'CODPARC', t:'Cód. Parceiro', num:true},
-    {k:'NOMEPARC', t:'Parceiro'}
+    colCodDesc('CODEMP', 'Empresa', 'CODEMP', 'NOMEFANTASIA'),
+    {k:'CHAVE', t:'Chave CT-e', cls:'mono'},
+    {k:'DTENTSAI', t:'Dt. Entrada', date:true},
+    colCodDesc('CODNAT', 'Natureza', 'CODNAT', 'DESCRNAT'),
+    colCodDesc('CODCENCUS', 'CR', 'CODCENCUS', 'DESCRCENCUS'),
+    colCodDesc('CODPROJ', 'Projeto', 'CODPROJ', 'DESCRPROJ'),
+    {k:'VLRNOTA', t:'Valor CT-e', num:true, money:true},
+    {k:'QTDNF', t:'NF-e', num:true, html:function(r){
+      var q = num(r.QTDNF);
+      return q ? '<span class="badge ok">' + q + ' vínculo' + (q > 1 ? 's' : '') + '</span>' : '<span class="badge warn">Sem NF-e</span>';
+    }, txt:function(r){ return num(r.QTDNF); }},
+    {k:'QTDRAT', t:'Rateio', num:true, html:function(r){
+      var q = num(r.QTDRAT);
+      return q ? '<span class="badge blue">' + q + ' linha' + (q > 1 ? 's' : '') + '</span>' : '<span class="badge err">Sem rateio</span>';
+    }, txt:function(r){ return num(r.QTDRAT) ? num(r.QTDRAT) + ' linhas' : 'Sem rateio'; }},
+    colCodDesc('CODTIPOPER', 'Tipo Operação', 'CODTIPOPER', 'DESCROPER'),
+    COL_CONF,
+    colCodDesc('CODPARC', 'Parceiro', 'CODPARC', 'NOMEPARC'),
+    {k:'TIPFRETE', t:'Tipo Frete'},
+    {k:'CIFFOB', t:'CIF/FOB'}
   ];
 
-  //NF: COLUNAS BASE + FRETE + STATUS DO CTE (LOGO APOS O VALOR DA NOTA)
-  var COLS_NF = (function(){
-    var c = COLS_BASE.slice();
-    c[4] = {k:'CHAVE', t:'Chave NF-e', cls:'mono'};
-    var i = c.map(function(x){ return x.k; }).indexOf('VLRNOTA') + 1;
-    c.splice(i, 0,
-      {k:'VLRFRETE', t:'Valor Frete', num:true, money:true},
-      {k:'QTDCTE', t:'CT-e', num:true, html:function(r){
-        var q = num(r.QTDCTE);
-        if(!q) return '<span class="badge warn">Sem CT-e</span>';
-        var sr = num(r.QTDCTESEMRAT);
-        return '<span class="badge ok">' + q + ' vinculado' + (q > 1 ? 's' : '') + '</span>'
-          + (sr ? ' <span class="badge err" title="CT-e sem rateio (TGFRAV)">' + (q > 1 ? sr + ' ' : '') + 'sem rateio</span>' : '');
-      }, txt:function(r){ return num(r.QTDCTE) + (num(r.QTDCTESEMRAT) ? ' (' + num(r.QTDCTESEMRAT) + ' sem rateio)' : ''); }}
-    );
-    return c;
-  })();
-
-  var COLS_CTE = (function(){
-    var c = COLS_BASE.slice();
-    c[4] = {k:'CHAVE', t:'Chave CT-e', cls:'mono'};
-    c.unshift({k:'_RAT', t:'', nosort:true, html:function(r){
-      return '<div class="acts">'
-        + '<button class="btn-rat" data-rat="' + esc(r.NUNOTA) + '" title="Comparar o rateio NF x CT-e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>Ver Rateio</button>'
-        + '<button class="btn sm" data-open="' + esc(r.NUNOTA) + '" title="Abrir o CT-e na Central"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Abrir CT-e</button>'
-        + '</div>';
-    }});
-    c.splice(2, 0, {k:'QTDRAT', t:'Rateio', html:function(r){
-      return num(r.QTDRAT) > 0 ? '<span class="badge blue">' + num(r.QTDRAT) + ' linha' + (num(r.QTDRAT) > 1 ? 's' : '') + '</span>' : '<span class="badge no">Sem rateio</span>';
-    }});
-    return c;
-  })();
+  var COLS_NF = [
+    {k:'_ABRIR', t:'', html:function(r){
+      return '<button class="btn sm" data-open="' + esc(r.NUNOTA) + '" title="Abrir a NF-e na Central">' + ICO_ABRIR + 'Abrir NF-e</button>';
+    }},
+    {k:'NUNOTA', t:'Nro. Único', num:true},
+    {k:'NUMNOTA', t:'Nro. Nota', num:true},
+    {k:'SERIENOTA', t:'Série'},
+    colCodDesc('CODEMP', 'Empresa', 'CODEMP', 'NOMEFANTASIA'),
+    {k:'CHAVE', t:'Chave NF-e', cls:'mono'},
+    {k:'DTENTSAI', t:'Dt. Entrada', date:true},
+    colCodDesc('CODNAT', 'Natureza', 'CODNAT', 'DESCRNAT'),
+    colCodDesc('CODCENCUS', 'CR', 'CODCENCUS', 'DESCRCENCUS'),
+    colCodDesc('CODPROJ', 'Projeto', 'CODPROJ', 'DESCRPROJ'),
+    {k:'VLRNOTA', t:'Valor Nota', num:true, money:true},
+    {k:'VLRFRETE', t:'Valor Frete', num:true, money:true},
+    colCodDesc('CODTIPOPER', 'Tipo Operação', 'CODTIPOPER', 'DESCROPER'),
+    COL_CONF,
+    colCodDesc('CODPARC', 'Parceiro', 'CODPARC', 'NOMEPARC')
+  ];
 
   function cellHtml(col, r){
     if(col.html) return col.html(r);
     var v = r[col.k];
     if(col.money) return money(v);
-    if(col.num && v !== null && v !== undefined && v !== '') return esc(v);
     return esc(v);
   }
   function cellTxt(col, r){
@@ -816,7 +873,7 @@
     var h = '<table class="grid"><thead><tr>';
     cols.forEach(function(c){
       var sorted = opts.sort && opts.sort.k === c.k;
-      var arrow = c.nosort ? '' : '<span class="ar">' + (sorted ? (opts.sort.dir > 0 ? '&#9650;' : '&#9660;') : '&#8693;') + '</span>';
+      var arrow = c.k.charAt(0) === '_' ? '' : '<span class="ar">' + (sorted ? (opts.sort.dir > 0 ? '&#9650;' : '&#9660;') : '&#8693;') + '</span>';
       h += '<th data-k="' + c.k + '" class="' + (c.num ? 'num ' : '') + (sorted ? 'sorted' : '') + '">' + esc(c.t) + arrow + '</th>';
     });
     h += '</tr></thead><tbody>';
@@ -837,8 +894,7 @@
   function emptyHtml(icon, title, text){
     var icons = {
       doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
-      truck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
-      click:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 9 5 12 1.8-5.2L21 14z"/><path d="M7.2 2.2 8 5.1M5.1 8 2.2 7.2M14 4.1 12 6.2M6.2 12l-2.1 2"/></svg>'
+      truck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>'
     };
     return '<div class="empty">' + icons[icon] + '<b>' + esc(title) + '</b><div>' + esc(text) + '</div></div>';
   }
@@ -850,233 +906,300 @@
     var hoje = new Date();
     $('dtEntIni').value = isoDate(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
     $('dtEntFin').value = isoDate(hoje);
-    $('dtNegIni').value = '';
-    $('dtNegFin').value = '';
-    $('apenasCte').checked = false;
-    $('apenasSemRat').checked = false;
-    state.topsSel = {};
-    renderTops();
+    MS_LISTAS.forEach(function(m){ m.limpar(); });
+    state.filtroNF = null;
+    state.filtroRat = false;
   }
 
   function readFilters(){
     var f = {
       entIni: $('dtEntIni').value, entFin: $('dtEntFin').value,
-      negIni: $('dtNegIni').value, negFin: $('dtNegFin').value,
-      tops: Object.keys(state.topsSel).filter(function(k){ return state.topsSel[k]; }).map(int),
-      apenasCte: $('apenasCte').checked,
-      apenasSemRat: $('apenasSemRat').checked
+      topsCte: msTopCte.selecionados(),
+      topsNf: msTopNf.selecionados()
     };
+    if(!f.entIni && !f.entFin) throw new Error('Informe o período de entrada.');
     if(f.entIni && f.entFin && f.entIni > f.entFin) throw new Error('Período de entrada: data inicial maior que a final.');
-    if(f.negIni && f.negFin && f.negIni > f.negFin) throw new Error('Período de negociação: data inicial maior que a final.');
-    if(!f.entIni && !f.entFin && !f.negIni && !f.negFin) throw new Error('Informe ao menos um período (entrada ou negociação).');
     return f;
   }
 
-  //MULTILIST DE TOPs
-  function renderTops(){
-    var term = ($('msTopSearch').value || '').toLowerCase();
-    var html = '';
-    state.tops.forEach(function(t){
-      var label = t.CODTIPOPER + ' ' + (t.DESCROPER || '');
-      if(term && label.toLowerCase().indexOf(term) < 0) return;
-      var ck = state.topsSel[t.CODTIPOPER] ? ' checked' : '';
-      html += '<label class="ms-item"><input type="checkbox" value="' + esc(t.CODTIPOPER) + '"' + ck + '><b>' + esc(t.CODTIPOPER) + '</b><span>' + esc(t.DESCROPER) + '</span></label>';
-    });
-    $('msTopList').innerHTML = html || ('<div class="muted" style="padding:8px">Nenhuma TOP encontrada.</div>'
-      + (DEMO || state.tops.length ? '' : '<div style="padding:0 8px 6px"><button type="button" class="btn sm" id="btnDiagTop">Ver retorno da consulta</button></div>'));
+  /* MULTILIST DE TOPs (COMPONENTE REUTILIZADO PELOS FILTROS "TOPs COMPRA (CT-e)" E "TOPs COMPRA (NF-e)")
+     id = ELEMENTO .ms / nome = NOME DA CONSULTA (DIAGNOSTICO E DEMO) / sql = FUNCAO QUE MONTA O SELECT */
+  function MultiList(id, nome, sql){
+    var root = $(id), self = this;
+    var q = function(s){ return root.querySelector(s); };
+    self.root = root; self.itens = []; self.sel = {};
 
-    var sel = state.tops.filter(function(t){ return state.topsSel[t.CODTIPOPER]; });
-    var btn = $('msTopBtn');
-    btn.querySelector('.txt').textContent = !sel.length ? 'Todas as TOPs'
-      : sel.length === 1 ? sel[0].CODTIPOPER + ' - ' + sel[0].DESCROPER
-      : sel.map(function(t){ return t.CODTIPOPER; }).join(', ');
-    var cnt = btn.querySelector('.cnt');
-    cnt.style.display = sel.length > 1 ? '' : 'none';
-    cnt.textContent = sel.length;
+    self.selecionados = function(){
+      return Object.keys(self.sel).filter(function(k){ return self.sel[k]; }).map(int);
+    };
+    self.limpar = function(){ self.sel = {}; self.render(); };
+    self.fechar = function(){ root.classList.remove('open'); };
+    self.aberto = function(){ return root.classList.contains('open'); };
+
+    self.render = function(){
+      var term = (q('.ms-search').value || '').toLowerCase();
+      var html = '';
+      self.itens.forEach(function(t){
+        var label = t.CODTIPOPER + ' ' + (t.DESCROPER || '');
+        if(term && label.toLowerCase().indexOf(term) < 0) return;
+        var ck = self.sel[t.CODTIPOPER] ? ' checked' : '';
+        html += '<label class="ms-item"><input type="checkbox" value="' + esc(t.CODTIPOPER) + '"' + ck + '><b>' + esc(t.CODTIPOPER) + '</b><span>' + esc(t.DESCROPER) + '</span></label>';
+      });
+      q('.ms-list').innerHTML = html || ('<div class="muted" style="padding:8px">Nenhuma TOP encontrada.</div>'
+        + (DEMO || self.itens.length ? '' : '<div style="padding:0 8px 6px"><button type="button" class="btn sm ms-diag">Ver retorno da consulta</button></div>'));
+
+      var sel = self.itens.filter(function(t){ return self.sel[t.CODTIPOPER]; });
+      var btn = q('.ms-btn');
+      btn.querySelector('.txt').textContent = !sel.length ? 'Todas as TOPs'
+        : sel.length === 1 ? sel[0].CODTIPOPER + ' - ' + sel[0].DESCROPER
+        : sel.map(function(t){ return t.CODTIPOPER; }).join(', ');
+      var cnt = btn.querySelector('.cnt');
+      cnt.style.display = sel.length > 1 ? '' : 'none';
+      cnt.textContent = sel.length;
+    };
+
+    self.carregar = function(){
+      return runQuery(nome, sql()).then(function(rows){
+        self.itens = rows;
+        self.render();
+      });
+    };
+
+    //EVENTOS
+    q('.ms-btn').addEventListener('click', function(){
+      MS_LISTAS.forEach(function(m){ if(m !== self) m.fechar(); });
+      root.classList.toggle('open');
+      if(self.aberto()) setTimeout(function(){ q('.ms-search').focus(); }, 0);
+    });
+    document.addEventListener('mousedown', function(e){ if(!root.contains(e.target)) self.fechar(); });
+    q('.ms-search').addEventListener('input', self.render);
+    q('.ms-search').addEventListener('keydown', function(e){ if(e.key === 'Enter') e.stopPropagation(); });
+    q('.ms-list').addEventListener('click', function(e){
+      if(e.target.closest('.ms-diag')){ self.fechar(); showDiag(); }
+    });
+    q('.ms-list').addEventListener('change', function(e){
+      if(e.target.type !== 'checkbox') return;
+      self.sel[e.target.value] = e.target.checked;
+      self.render();
+    });
+    q('.ms-all').addEventListener('click', function(){
+      var term = (q('.ms-search').value || '').toLowerCase();
+      self.itens.forEach(function(t){ if(!term || (t.CODTIPOPER + ' ' + t.DESCROPER).toLowerCase().indexOf(term) >= 0) self.sel[t.CODTIPOPER] = true; });
+      self.render();
+    });
+    q('.ms-none').addEventListener('click', self.limpar);
   }
 
+  var msTopCte, msTopNf, MS_LISTAS = [];
+  function criaListas(){
+    msTopCte = new MultiList('msTopCte', 'topsCte', SQL.topsCte);
+    msTopNf = new MultiList('msTopNf', 'topsNf', SQL.topsNf);
+    MS_LISTAS = [msTopCte, msTopNf];
+  }
   function loadTops(){
-    return runQuery('tops', SQL.tops()).then(function(rows){
-      state.tops = rows;
-      renderTops();
-    });
+    //AS DUAS LISTAS CARREGAM JUNTAS; ERRO EM UMA NAO IMPEDE A OUTRA
+    return Promise.all(MS_LISTAS.map(function(m){
+      return m.carregar().catch(function(e){ toast(e.message, true); });
+    }));
   }
 
   /* =========================================================================
-     NOTAS DE COMPRA
+     CT-e (LISTA PRINCIPAL)
      ========================================================================= */
-  function loadNFs(){
+  function loadCTes(){
     var f;
     try{ f = readFilters(); }catch(e){ toast(e.message, true); return Promise.resolve(); }
-    busy('cardNF', true);
-    return runQuery('nfs', SQL.nfs(f), f).then(function(rows){
+    busy('cardCTe', true);
+    return runQuery('ctes', SQL.ctes(f), f).then(function(rows){
       if(rows.length > CFG.MAX_LINHAS){
         rows = rows.slice(0, CFG.MAX_LINHAS);
-        toast('Mais de ' + fmtInt.format(CFG.MAX_LINHAS) + ' notas no período. Refine os filtros.', true);
+        toast('Mais de ' + fmtInt.format(CFG.MAX_LINHAS) + ' CT-e no período. Refine os filtros.', true);
       }
-      state.nfs = rows;
-      //MANTEM A NF SELECIONADA SE ELA CONTINUAR NA LISTA
-      if(state.nfSel && !rows.some(function(r){ return String(r.NUNOTA) === String(state.nfSel.NUNOTA); })){
-        state.nfSel = null; state.ctes = [];
-      }
-      state.cacheCte = {};
-      applyNfView();
+      state.ctes = rows;
+      state.cacheNF = {};
+      //MANTEM O CT-e SELECIONADO SE ELE CONTINUAR NA LISTA
+      var sel = state.cteSel && rows.filter(function(r){ return String(r.NUNOTA) === String(state.cteSel.NUNOTA); })[0];
+      state.cteSel = sel || null;
+      if(!sel) state.nfs = [];
+      applyCteView();
       renderKpis();
-      if(state.nfSel){
-        state.nfSel = rows.filter(function(r){ return String(r.NUNOTA) === String(state.nfSel.NUNOTA); })[0];
-        loadCTes(state.nfSel);
-      }else{
-        renderCTes();
-      }
+      if(sel) loadNFs(sel); else renderNFs();
       $('lastUpd').textContent = (DEMO ? 'Modo demonstração · ' : '') + 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
     }).catch(function(e){
       toast(e.message, true);
-    }).then(function(){ busy('cardNF', false); });
+    }).then(function(){ busy('cardCTe', false); });
   }
 
-  function applyNfView(){
-    var term = state.nfSearch.toLowerCase();
-    var rows = state.nfs;
-    if(term){
-      rows = rows.filter(function(r){
-        return COLS_NF.some(function(c){ return cellTxt(c, r).toLowerCase().indexOf(term) >= 0; });
-      });
-    }
-    var s = state.nfSort, col = COLS_NF.filter(function(c){ return c.k === s.k; })[0] || {};
-    rows = rows.slice().sort(function(a, b){
+  function applyCteView(){
+    var term = state.cteSearch.toLowerCase();
+    var fnf = state.filtroNF;
+    var rows = state.ctes.filter(function(r){
+      if(fnf === 'com' && !num(r.QTDNF)) return false;
+      if(fnf === 'sem' && num(r.QTDNF)) return false;
+      if(state.filtroRat && num(r.QTDRAT)) return false;
+      return !term || COLS_CTE.some(function(c){ return cellTxt(c, r).toLowerCase().indexOf(term) >= 0; });
+    });
+    var s = state.cteSort, col = COLS_CTE.filter(function(c){ return c.k === s.k; })[0] || {};
+    rows.sort(function(a, b){
       var x = a[s.k], y = b[s.k];
       if(col.date){ x = dateKey(x); y = dateKey(y); }
       else if(col.num){ x = num(x); y = num(y); }
-      else { x = String(x || '').toLowerCase(); y = String(y || '').toLowerCase(); }
+      else { x = cellTxt(col, a).toLowerCase(); y = cellTxt(col, b).toLowerCase(); }
       return (x > y ? 1 : x < y ? -1 : 0) * s.dir || (num(b.NUNOTA) - num(a.NUNOTA));
     });
-    state.nfView = rows;
-    renderNFs();
+    state.cteView = rows;
+    renderCTes();
+    renderFiltroNF();
   }
 
-  function renderNFs(){
-    var rows = state.nfView;
-    $('nfCount').textContent = fmtInt.format(rows.length) + (rows.length !== state.nfs.length ? ' de ' + fmtInt.format(state.nfs.length) : '');
-    if(!state.nfs.length){
-      $('nfWrap').innerHTML = emptyHtml('doc', 'Nenhuma nota encontrada', 'Ajuste os filtros de período, TOP ou CT-e e clique em Aplicar.')
+  function renderCTes(){
+    var rows = state.cteView;
+    $('cteCount').textContent = fmtInt.format(rows.length) + (rows.length !== state.ctes.length ? ' de ' + fmtInt.format(state.ctes.length) : '');
+    //RODAPE DO CARD: QTD. TOTAL E TOTAL R$ DOS CT-e DA LISTA (RESPEITA O FILTRO DE TEXTO E O FILTRO DOS TOTAIS)
+    var tVlr = 0;
+    rows.forEach(function(r){ tVlr += num(r.VLRNOTA); });
+    $('cteTot').innerHTML = '<span>Qtd. Total CT-e: <b>' + fmtInt.format(rows.length) + '</b></span>'
+      + '<span>Total R$ CT-e: <b>' + brl(tVlr) + '</b></span>';
+    if(!state.ctes.length){
+      $('cteWrap').innerHTML = emptyHtml('truck', 'Nenhum CT-e encontrado', 'Ajuste os filtros de período, TOP ou rateio e clique em Aplicar.')
         + (DEMO ? '' : '<div style="text-align:center;margin-top:-20px"><button class="btn sm" id="btnDiag">Ver retorno da consulta</button></div>');
       return;
     }
     if(!rows.length){
-      $('nfWrap').innerHTML = emptyHtml('doc', 'Nada corresponde ao filtro', 'Nenhuma nota contém "' + state.nfSearch + '".');
+      $('cteWrap').innerHTML = emptyHtml('truck', 'Nada corresponde ao filtro', state.cteSearch ? 'Nenhum CT-e contém "' + state.cteSearch + '".' : 'Nenhum CT-e nesta situação.');
       return;
     }
-    var tVlr = 0, tFrete = 0;
-    rows.forEach(function(r){ tVlr += num(r.VLRNOTA); tFrete += num(r.VLRFRETE); });
-    var foot = '';
-    COLS_NF.forEach(function(c, i){
-      foot += '<td class="' + (c.num ? 'num' : '') + '">'
-        + (i === 0 ? 'Total' : c.k === 'VLRNOTA' ? money(tVlr) : c.k === 'VLRFRETE' ? money(tFrete) : '') + '</td>';
-    });
-    $('nfWrap').innerHTML = renderTable(COLS_NF, rows, {sort:state.nfSort, selKey:state.nfSel && state.nfSel.NUNOTA, foot:foot});
+    $('cteWrap').innerHTML = renderTable(COLS_CTE, rows, {sort:state.cteSort, selKey:state.cteSel && state.cteSel.NUNOTA});
   }
 
   function renderKpis(){
-    var rows = state.nfs, vlr = 0, frete = 0, com = 0, freteCom = 0, semRat = 0;
+    var rows = state.ctes, vlr = 0, com = 0, vlrCom = 0, semRat = 0, vlrSemRat = 0;
     rows.forEach(function(r){
-      vlr += num(r.VLRNOTA); frete += num(r.VLRFRETE);
-      if(num(r.QTDCTE) > 0){ com++; freteCom += num(r.VLRFRETE); }
-      if(num(r.QTDCTESEMRAT) > 0) semRat++;
+      var v = num(r.VLRNOTA);
+      vlr += v;
+      if(num(r.QTDNF) > 0){ com++; vlrCom += v; }
+      if(!num(r.QTDRAT)){ semRat++; vlrSemRat += v; }
     });
     var sem = rows.length - com;
-    var pc = function(a){ return rows.length ? Math.round(a * 100 / rows.length) + '% das notas' : ' '; };
-    $('kQtd').textContent = fmtInt.format(rows.length);
-    $('kVlr').textContent = brl(vlr);
-    $('kVlrH').textContent = rows.length ? 'média ' + brl(vlr / rows.length) : ' ';
-    $('kFrete').textContent = brl(frete);
-    $('kFreteH').textContent = vlr ? fmtMoney.format(frete * 100 / vlr) + '% do valor das notas' : ' ';
+    var pc = function(a){ return rows.length ? Math.round(a * 100 / rows.length) + '%' : ''; };
+    $('kRat').textContent = fmtInt.format(semRat);
+    $('kRatH').textContent = rows.length ? pc(semRat) + ' · ' + brl(vlrSemRat) : '';
     $('kCom').textContent = fmtInt.format(com);
-    $('kComH').textContent = rows.length ? pc(com) + ' · ' + fmtInt.format(semRat) + ' com CT-e sem rateio' : ' ';
+    $('kComH').textContent = rows.length ? pc(com) + ' · ' + brl(vlrCom) : '';
     $('kSem').textContent = fmtInt.format(sem);
-    $('kSemH').textContent = rows.length ? pc(sem) + ' · frete ' + brl(frete - freteCom) : ' ';
+    $('kSemH').textContent = rows.length ? pc(sem) + ' · ' + brl(vlr - vlrCom) : '';
+  }
+
+  /* FILTRO PELOS TOTAIS (NO CLIENTE, SEM NOVA CONSULTA):
+     - "COM / SEM NF-e VINCULADO": UM OU OUTRO (CLICAR DE NOVO DESMARCA)
+     - "CT-e SEM RATEIO": LIGA/DESLIGA E COMBINA COM O FILTRO DE NF-e */
+  function setFiltro(v){
+    if(v === 'semrat') state.filtroRat = !state.filtroRat;
+    else state.filtroNF = state.filtroNF === v ? null : v;
+    //SE O CT-e SELECIONADO SAIR DA LISTA, FECHA O PAINEL DA NF-e
+    var c = state.cteSel;
+    if(c && ((state.filtroNF === 'com' && !num(c.QTDNF)) || (state.filtroNF === 'sem' && num(c.QTDNF)) || (state.filtroRat && num(c.QTDRAT)))) closeNF();
+    applyCteView();
+  }
+  var ICO_X = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  function renderFiltroNF(){
+    var on = {kpiCom: state.filtroNF === 'com', kpiSem: state.filtroNF === 'sem', kpiRat: state.filtroRat};
+    Object.keys(on).forEach(function(id){
+      $(id).classList.toggle('on', on[id]);
+      $(id).setAttribute('aria-pressed', on[id]);
+    });
+    var chips = '';
+    if(state.filtroRat) chips += '<span class="chip">CT-e sem rateio<button data-limpa="semrat" title="Remover filtro">' + ICO_X + '</button></span> ';
+    if(state.filtroNF) chips += '<span class="chip">' + (state.filtroNF === 'com' ? 'Com NF-e vinculado' : 'Sem NF-e vinculado')
+      + '<button data-limpa="nf" title="Remover filtro">' + ICO_X + '</button></span>';
+    $('cteChip').innerHTML = chips;
   }
 
   /* =========================================================================
-     CT-e VINCULADO
+     NF-e VINCULADA (PAINEL INFERIOR)
      ========================================================================= */
-  function selectNF(nu){
-    var r = state.nfs.filter(function(x){ return String(x.NUNOTA) === String(nu); })[0];
-    if(!r || (state.nfSel && String(state.nfSel.NUNOTA) === String(nu))) return;
-    state.nfSel = r;
-    var trs = $('nfWrap').querySelectorAll('tbody tr'), alvo = null;
+  function selectCTe(nu){
+    var r = state.ctes.filter(function(x){ return String(x.NUNOTA) === String(nu); })[0];
+    if(!r || (state.cteSel && String(state.cteSel.NUNOTA) === String(nu))) return;
+    state.cteSel = r;
+    var trs = $('cteWrap').querySelectorAll('tbody tr'), alvo = null;
     for(var i = 0; i < trs.length; i++){
       var on = trs[i].getAttribute('data-nu') === String(nu);
       trs[i].classList.toggle('sel', on);
       if(on) alvo = trs[i];
     }
-    $('split').classList.add('has-cte');
-    //A LISTA DE NOTAS DIMINUI QUANDO O PAINEL DO CTE ABRE: MANTEM A LINHA SELECIONADA VISIVEL
+    $('split').classList.add('has-nf');
+    //A LISTA DE CT-e DIMINUI QUANDO O PAINEL DA NF-e ABRE: MANTEM A LINHA SELECIONADA VISIVEL
     if(alvo) setTimeout(function(){
-      var wrap = $('nfWrap');
+      var wrap = $('cteWrap');
       wrap.scrollTop = Math.max(0, alvo.offsetTop - (wrap.clientHeight - alvo.offsetHeight) / 2);
     }, 0);
-    state.ctes = [];
-    renderCTes();
-    loadCTes(r);
+    state.nfs = [];
+    renderNFs();
+    loadNFs(r);
   }
 
-  //FECHA O PAINEL DO CTE E VOLTA A LISTA COMPLETA DE NOTAS
-  function closeCTe(){
-    state.nfSel = null; state.ctes = [];
-    $('split').classList.remove('has-cte');
-    var sel = $('nfWrap').querySelector('tbody tr.sel');
+  //FECHA O PAINEL DA NF-e E VOLTA A LISTA COMPLETA DE CT-e
+  function closeNF(){
+    state.cteSel = null; state.nfs = [];
+    $('split').classList.remove('has-nf');
+    var sel = $('cteWrap').querySelector('tbody tr.sel');
     if(sel) sel.classList.remove('sel');
-    renderCTes();
+    renderNFs();
   }
 
-  function loadCTes(nf){
-    var key = String(nf.NUNOTA);
-    if(state.cacheCte[key]){ state.ctes = state.cacheCte[key]; renderCTes(); return; }
-    busy('cardCTe', true);
-    runQuery('ctes', SQL.ctes(nf.NUNOTA), {nunota:nf.NUNOTA}).then(function(rows){
-      state.cacheCte[key] = rows;
-      if(state.nfSel && String(state.nfSel.NUNOTA) === key){ state.ctes = rows; renderCTes(); }
+  function loadNFs(cte){
+    var key = String(cte.NUNOTA);
+    if(state.cacheNF[key]){ state.nfs = state.cacheNF[key]; renderNFs(); return; }
+    busy('cardNF', true);
+    runQuery('nfs', SQL.nfs(cte.NUNOTA), {nunotaCte:cte.NUNOTA}).then(function(rows){
+      state.cacheNF[key] = rows;
+      if(state.cteSel && String(state.cteSel.NUNOTA) === key){ state.nfs = rows; renderNFs(); }
     }).catch(function(e){ toast(e.message, true); })
-      .then(function(){ busy('cardCTe', false); });
+      .then(function(){ busy('cardNF', false); });
   }
 
-  function renderCTes(){
-    var nf = state.nfSel, w = $('cteWrap');
-    $('split').classList.toggle('has-cte', !!nf);
-    if(!nf){
-      $('cteCount').textContent = '0';
-      $('cteNfRef').textContent = '';
+  function renderNFs(){
+    var cte = state.cteSel, w = $('nfWrap');
+    $('split').classList.toggle('has-nf', !!cte);
+    if(!cte){
+      $('nfCount').textContent = '0';
+      $('nfCteRef').textContent = '';
       w.innerHTML = '';
       return;
     }
-    $('cteNfRef').textContent = '· NF ' + nf.NUMNOTA + ' (NU ' + nf.NUNOTA + ')';
-    var rows = state.ctes, totCte = 0;
-    rows.forEach(function(r){ totCte += num(r.VLRNOTA); });
-    var dif = totCte - num(nf.VLRFRETE);
+    $('nfCteRef').textContent = '· CT-e ' + cte.NUMNOTA + ' (NU ' + cte.NUNOTA + ')';
+    var rows = state.nfs, totFrete = 0;
+    rows.forEach(function(r){ totFrete += num(r.VLRFRETE); });
+    var dif = num(cte.VLRNOTA) - totFrete;
     var difCls = !rows.length ? 'muted' : Math.abs(dif) < 0.01 ? '' : 'diff-pos';
-    $('cteCount').textContent = rows.length;
+    $('nfCount').textContent = rows.length;
 
-    var esq = '<div class="nfbox"><div class="t"><span>NF ' + esc(nf.NUMNOTA) + (nf.SERIENOTA ? '/' + esc(nf.SERIENOTA) : '') + ' <span class="muted" style="font-weight:500">· NU ' + esc(nf.NUNOTA) + '</span></span></div>'
-      + '<div class="p" title="' + esc(nf.NOMEPARC) + '">' + esc(nf.CODPARC) + ' - ' + esc(nf.NOMEPARC) + '</div>'
-      + '<div class="p">Entrada ' + esc(nf.DTENTSAI || '-') + ' · Valor ' + money(nf.VLRNOTA) + '</div>'
-      + '<div class="cmp"><div><span>Frete NF</span><b>' + money(nf.VLRFRETE) + '</b></div>'
-      + '<div><span>Valor CT-e</span><b>' + (rows.length ? money(totCte) : '-') + '</b></div>'
-      + '<div><span>Diferença</span><b class="' + difCls + '">' + (rows.length ? money(dif) : '-') + '</b></div></div></div>';
+    var esq = '<div class="box"><div class="t">CT-e ' + esc(cte.NUMNOTA) + (cte.SERIENOTA ? '/' + esc(cte.SERIENOTA) : '') + ' <span class="muted" style="font-weight:500">· NU ' + esc(cte.NUNOTA) + '</span></div>'
+      + '<div class="p" title="' + esc(cte.NOMEPARC) + '">' + esc(cte.CODPARC) + ' - ' + esc(cte.NOMEPARC) + '</div>'
+      + '<div class="p">Entrada ' + esc(cte.DTENTSAI || '-') + (cte.CIFFOB ? ' · ' + esc(cte.CIFFOB) : '') + (cte.TIPFRETE ? ' · ' + esc(cte.TIPFRETE) : '') + '</div>'
+      + '<div class="cmp"><div><span>Valor CT-e</span><b>' + money(cte.VLRNOTA) + '</b></div>'
+      + '<div><span>Frete NF-e</span><b>' + (rows.length ? money(totFrete) : '-') + '</b></div>'
+      + '<div><span>Diferença</span><b class="' + difCls + '">' + (rows.length ? money(dif) : '-') + '</b></div></div>'
+      + '<div class="acts">'
+      + '<button class="btn-rat" data-rat="' + esc(cte.NUNOTA) + '" title="Comparar o rateio NF-e x CT-e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>Ver Rateio</button>'
+      + '<button class="btn sm" data-open="' + esc(cte.NUNOTA) + '" title="Abrir o CT-e na Central">' + ICO_ABRIR + 'Abrir CT-e</button>'
+      + '</div></div>';
 
     var dir = rows.length
-      ? renderTable(COLS_CTE, rows, {})
-      : emptyHtml('truck', 'Nenhum CT-e vinculado', 'Não há CT-e com esta nota na aba de notas do conhecimento (TGFNCT).');
-    w.innerHTML = '<div class="cte-grid"><div class="cte-l">' + esq + '</div><div class="cte-r">' + dir + '</div></div>';
+      ? renderTable(COLS_NF, rows, {})
+      : emptyHtml('doc', 'Nenhuma NF-e vinculada', 'Este CT-e não tem NF-e de compra na aba de notas do conhecimento (TGFNCT).');
+    w.innerHTML = '<div class="sub-grid"><div class="sub-l">' + esq + '</div><div class="sub-r">' + dir + '</div></div>';
   }
 
   /* =========================================================================
-     POP UP RATEIO NF x CT-e
+     POP UP RATEIO NF-e x CT-e
      ========================================================================= */
   function chaveRateio(r){ return [num(r.CODNAT), num(r.CODCENCUS), num(r.CODPROJ)].join('|'); }
 
   function openRateio(nuCte){
     var cte = state.ctes.filter(function(c){ return String(c.NUNOTA) === String(nuCte); })[0] || {NUNOTA:nuCte};
-    $('ratTitle').innerHTML = 'Rateio NF x CT-e <span class="muted" style="font-weight:500;font-size:13px">CT-e ' + esc(cte.NUMNOTA || '') + ' · NU ' + esc(cte.NUNOTA) + '</span>';
+    $('ratTitle').innerHTML = 'Rateio NF-e x CT-e <span class="muted" style="font-weight:500;font-size:13px">CT-e ' + esc(cte.NUMNOTA || '') + ' · NU ' + esc(cte.NUNOTA) + '</span>';
     $('ratSub').textContent = (cte.NOMEPARC ? cte.CODPARC + ' - ' + cte.NOMEPARC + ' · ' : '') + 'Valor CT-e ' + brl(cte.VLRNOTA);
     $('ratBody').innerHTML = '<div style="height:160px"></div>';
     $('ovRat').classList.add('open');
@@ -1131,7 +1254,7 @@
 
     //RATEIO ESPERADO PARA O CTE = RATEIO DAS NFs PONDERADO PELO VLRNOTA (MESMA REGRA DO replicaRateioNFxCTE)
     var nfs = {}, totNF = 0;
-    nfRows.forEach(function(r){ if(!nfs[r.NUNOTA]){ nfs[r.NUNOTA] = num(r.VLRNOTA); totNF += num(r.VLRNOTA); } });
+    nfRows.forEach(function(r){ if(!(r.NUNOTA in nfs)){ nfs[r.NUNOTA] = num(r.VLRNOTA); totNF += num(r.VLRNOTA); } });
     var qtdNF = Object.keys(nfs).length;
     var esperado = {}, atual = {}, desc = {};
     nfRows.forEach(function(r){
@@ -1154,7 +1277,7 @@
     var nfSemRat = nfRows.length && nfRows.every(function(r){ return r.SEMRATEIO === 'S'; });
     var cteSemRat = cteRows.length && cteRows.every(function(r){ return r.SEMRATEIO === 'S'; });
 
-    var status = !nfRows.length ? '<span class="badge warn">CT-e sem NF vinculada</span>'
+    var status = !nfRows.length ? '<span class="badge warn">CT-e sem NF-e vinculada</span>'
       : qtdDiv ? '<span class="badge err">Divergente · ' + qtdDiv + ' linha' + (qtdDiv > 1 ? 's' : '') + '</span>'
       : '<span class="badge ok">Rateio conferido</span>';
     var t = $('ratTitle');
@@ -1162,7 +1285,8 @@
 
     var cols = [
       {k:'ORIGEM', t:'Origem', html:function(r){
-        var o = '<div style="white-space:nowrap;font-weight:600">' + (r.ORIGEM === 'NF' ? 'NF ' : 'CT-e ') + esc(r.NUMNOTA) + '</div>'
+        var o = '<div style="white-space:nowrap;font-weight:600">' + (r.ORIGEM === 'NF' ? 'NF-e ' : 'CT-e ') + esc(r.NUMNOTA)
+          + (r.ORIGEM === 'NF' ? '<button class="ico" data-open="' + esc(r.NUNOTA) + '" title="Abrir a NF-e na Central">' + ICO_ABRIR + '</button>' : '') + '</div>'
           + '<div class="muted" style="font-size:11px;white-space:nowrap">NU ' + esc(r.NUNOTA) + '</div>';
         return r.SEMRATEIO === 'S' ? o + '<span class="badge no" title="Nota sem rateio: considerado 100% no cabeçalho">cabeçalho</span>' : o;
       }},
@@ -1174,49 +1298,54 @@
       {k:'CODPARC', t:'Cód. Parceiro', num:true}
     ];
 
-    function pane(titulo, lista, marcaDiv){
+    function pane(titulo, extra, lista, marcaDiv){
       var tot = 0, totP = 0;
       lista.forEach(function(r){ tot += num(r.VLRRATEIO); totP += num(r.PERCRATEIO); });
-      var html = '<div class="pane"><div class="pane-h"><span>' + titulo + '</span><span class="pill">' + lista.length + ' linha' + (lista.length !== 1 ? 's' : '') + '</span></div><div class="pane-b">';
+      var html = '<div class="pane"><div class="pane-h"><span>' + titulo + '</span><span style="display:flex;gap:6px;align-items:center">' + extra
+        + '<span class="pill">' + lista.length + ' linha' + (lista.length !== 1 ? 's' : '') + '</span></span></div><div class="pane-b">';
       if(!lista.length){
         html += emptyHtml('doc', 'Sem linhas', 'Nenhuma nota encontrada.');
       }else{
-        var t = renderTable(cols, lista, {});
+        var tb = renderTable(cols, lista, {});
         if(marcaDiv){
           //DESTACA AS LINHAS DO CTE QUE DIVERGEM DO ESPERADO
           var i = 0;
-          t = t.replace(/<tr data-nu="[^"]*"/g, function(m){ var r = lista[i++]; return m + (divergentes[chaveRateio(r)] ? ' class="dif"' : ''); });
+          tb = tb.replace(/<tr data-nu="[^"]*"/g, function(m){ var r = lista[i++]; return m + (divergentes[chaveRateio(r)] ? ' class="dif"' : ''); });
         }
         var foot = '<td>Total</td><td></td><td></td><td></td><td class="num">' + (qtdNF > 1 && !marcaDiv ? '' : perc(totP)) + '</td><td class="num">' + money(tot) + '</td><td></td>';
-        html += t.replace('</tbody>', '</tbody><tfoot><tr>' + foot + '</tr></tfoot>');
+        html += tb.replace('</tbody>', '</tbody><tfoot><tr>' + foot + '</tr></tfoot>');
       }
       return html + '</div></div>';
     }
 
+    //BOTAO PARA ABRIR A NF-e (SE HOUVER UMA SO; COM VARIAS, CADA LINHA TEM O SEU ICONE)
+    var nfUnica = qtdNF === 1 ? Object.keys(nfs)[0] : null;
+    var btnNF = nfUnica ? '<button class="btn sm" data-open="' + esc(nfUnica) + '" title="Abrir a NF-e na Central">' + ICO_ABRIR + 'Abrir NF-e</button>' : '';
+
     var h = '';
     if(nfSemRat && cteSemRat){
-      h += '<div class="muted">NF e CT-e sem rateio: a comparação usa a natureza, o centro de resultado e o projeto do cabeçalho das notas.</div>';
+      h += '<div class="muted">NF-e e CT-e sem rateio: a comparação usa a natureza, o centro de resultado e o projeto do cabeçalho das notas.</div>';
     }
     h += '<div class="two">'
-      + pane('Notas de Compra' + (qtdNF > 1 ? ' <span class="muted" style="font-weight:500">(' + qtdNF + ' NFs, ponderadas pelo valor)</span>' : ''), nfRows, false)
-      + pane('CT-e', cteRows, true)
+      + pane('NF-e de Compra' + (qtdNF > 1 ? ' <span class="muted" style="font-weight:500">(' + qtdNF + ' NF-e, ponderadas pelo valor)</span>' : ''), btnNF, nfRows, false)
+      + pane('CT-e', '', cteRows, true)
       + '</div>';
 
     //COMPARATIVO POR NATUREZA / CR / PROJETO
     chaves.sort(function(a, b){ return (esperado[b] || atual[b] || 0) - (esperado[a] || atual[a] || 0); });
-    var comp = '<div class="pane"><div class="pane-h"><span>Comparativo NF x CT-e (Natureza · Centro de Resultado · Projeto)</span>'
+    var comp = '<div class="pane"><div class="pane-h"><span>Comparativo NF-e x CT-e (Natureza · Centro de Resultado · Projeto)</span>'
       + (qtdDiv ? '<span class="badge err">' + qtdDiv + ' divergência' + (qtdDiv > 1 ? 's' : '') + '</span>' : '<span class="badge ok">Sem divergências</span>')
       + '</div><div class="pane-b"><table class="grid"><thead><tr><th>Natureza</th><th>Centro de Resultado</th><th>Projeto</th>'
-      + '<th class="num">% esperado (NF)</th><th class="num">% no CT-e</th><th class="num">Diferença</th><th class="num">Valor esperado</th><th class="num">Valor no CT-e</th><th>Situação</th></tr></thead><tbody>';
+      + '<th class="num">% esperado (NF-e)</th><th class="num">% no CT-e</th><th class="num">Diferença</th><th class="num">Valor esperado</th><th class="num">Valor no CT-e</th><th>Situação</th></tr></thead><tbody>';
     var vlrCte = cteRows.length ? num(cteRows[0].VLRNOTA) : 0;
     chaves.forEach(function(k){
       var d = desc[k], e = esperado[k] || 0, a = atual[k] || 0, dv = divergentes[k];
-      comp += '<tr class="' + (dv ? 'dif' : 'okr') + '">'
+      comp += '<tr class="' + (dv ? 'dif' : '') + '">'
         + '<td>' + codDesc(d.CODNAT, d.DESCRNAT) + '</td><td>' + codDesc(d.CODCENCUS, d.DESCRCENCUS) + '</td><td>' + codDesc(d.CODPROJ, d.DESCRPROJ) + '</td>'
         + '<td class="num">' + perc(e) + '</td><td class="num">' + perc(a) + '</td>'
         + '<td class="num' + (dv ? ' diff-pos' : '') + '">' + perc(a - e) + '</td>'
         + '<td class="num">' + money(vlrCte * e / 100) + '</td><td class="num">' + money(vlrCte * a / 100) + '</td>'
-        + '<td class="st">' + (dv ? (!a ? '<span class="badge err">Falta no CT-e</span>' : !e ? '<span class="badge err">Não existe na NF</span>' : '<span class="badge err">% diferente</span>') : '<span class="badge ok">OK</span>') + '</td></tr>';
+        + '<td>' + (dv ? (!a ? '<span class="badge err">Falta no CT-e</span>' : !e ? '<span class="badge err">Não existe na NF-e</span>' : '<span class="badge err">% diferente</span>') : '<span class="badge ok">OK</span>') + '</td></tr>';
     });
     comp += '</tbody></table></div></div>';
     h += comp;
@@ -1225,12 +1354,12 @@
   }
 
   /* =========================================================================
-     CSV
+     CSV (LISTA DE CT-e COMO ESTA NA TELA)
      ========================================================================= */
   function exportCsv(){
-    var rows = state.nfView;
-    if(!rows.length){ toast('Não há notas para exportar.'); return; }
-    var cols = COLS_NF;
+    var rows = state.cteView;
+    if(!rows.length){ toast('Não há CT-e para exportar.'); return; }
+    var cols = COLS_CTE;
     var q = function(v){ v = String(v === null || v === undefined ? '' : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     var lines = [cols.map(function(c){ return q(c.t); }).join(';')];
     rows.forEach(function(r){
@@ -1243,7 +1372,7 @@
     var blob = new Blob(['﻿' + lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'notas_compra_x_cte_' + isoDate(new Date()) + '.csv';
+    a.download = 'cte_x_notas_compra_' + isoDate(new Date()) + '.csv';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   }
@@ -1252,86 +1381,77 @@
      EVENTOS
      ========================================================================= */
   function bind(){
-    $('btnAplicar').addEventListener('click', loadNFs);
-    $('apenasSemRat').addEventListener('change', loadNFs);
-    $('btnLimpar').addEventListener('click', function(){ defaultFilters(); loadNFs(); });
+    $('btnAplicar').addEventListener('click', loadCTes);
+    $('btnLimpar').addEventListener('click', function(){ defaultFilters(); closeNF(); loadCTes(); });
     $('btnCsv').addEventListener('click', exportCsv);
-    $('filters').addEventListener('keydown', function(e){ if(e.key === 'Enter' && e.target.id !== 'msTopSearch') loadNFs(); });
-    $('apenasCte').addEventListener('change', loadNFs);
+    $('filters').addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.target.closest('.ms') && !e.target.closest('.brand')) loadCTes(); });
 
-    //MULTILIST
-    var ms = $('msTop');
-    $('msTopBtn').addEventListener('click', function(){
-      ms.classList.toggle('open');
-      if(ms.classList.contains('open')) setTimeout(function(){ $('msTopSearch').focus(); }, 0);
+    //TOTAIS COMO FILTRO
+    ['kpiRat', 'kpiCom', 'kpiSem'].forEach(function(id){
+      var el = $(id);
+      el.addEventListener('click', function(){ setFiltro(el.getAttribute('data-filtro')); });
+      el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); setFiltro(el.getAttribute('data-filtro')); } });
     });
-    document.addEventListener('mousedown', function(e){ if(!ms.contains(e.target)) ms.classList.remove('open'); });
-    $('msTopSearch').addEventListener('input', renderTops);
-    $('msTopList').addEventListener('click', function(e){
-      if(e.target.closest('#btnDiagTop')){ ms.classList.remove('open'); showDiag(); }
+    $('cteChip').addEventListener('click', function(e){
+      var b = e.target.closest('[data-limpa]');
+      if(!b) return;
+      if(b.getAttribute('data-limpa') === 'semrat') state.filtroRat = false; else state.filtroNF = null;
+      applyCteView();
     });
-    $('msTopList').addEventListener('change', function(e){
-      if(e.target.type !== 'checkbox') return;
-      state.topsSel[e.target.value] = e.target.checked;
-      renderTops();
-    });
-    $('msAll').addEventListener('click', function(){
-      var term = ($('msTopSearch').value || '').toLowerCase();
-      state.tops.forEach(function(t){ if(!term || (t.CODTIPOPER + ' ' + t.DESCROPER).toLowerCase().indexOf(term) >= 0) state.topsSel[t.CODTIPOPER] = true; });
-      renderTops();
-    });
-    $('msNone').addEventListener('click', function(){ state.topsSel = {}; renderTops(); });
 
-    //GRADE NF: 1 CLIQUE SELECIONA / 2 CLIQUES ABRE A CENTRAL / CABECALHO ORDENA
-    var nfWrap = $('nfWrap');
-    nfWrap.addEventListener('click', function(e){
+    //GRADE CT-e: 1 CLIQUE MOSTRA A NF-e / 2 CLIQUES ABRE O CT-e NA CENTRAL / CABECALHO ORDENA
+    var cteWrap = $('cteWrap');
+    cteWrap.addEventListener('click', function(e){
       if(e.target.closest('#btnDiag')){ showDiag(); return; }
       var th = e.target.closest('th');
       if(th){
         var k = th.getAttribute('data-k');
-        state.nfSort = {k:k, dir: state.nfSort.k === k ? -state.nfSort.dir : 1};
-        applyNfView();
+        state.cteSort = {k:k, dir: state.cteSort.k === k ? -state.cteSort.dir : 1};
+        applyCteView();
         return;
       }
       var tr = e.target.closest('tbody tr');
-      if(tr) selectNF(tr.getAttribute('data-nu'));
+      if(tr) selectCTe(tr.getAttribute('data-nu'));
     });
-    nfWrap.addEventListener('dblclick', function(e){
+    cteWrap.addEventListener('dblclick', function(e){
       var tr = e.target.closest('tbody tr');
       if(tr) abrirCentral(tr.getAttribute('data-nu'));
     });
 
     var t;
-    $('nfSearch').addEventListener('input', function(e){
+    $('cteSearch').addEventListener('input', function(e){
       clearTimeout(t);
-      t = setTimeout(function(){ state.nfSearch = e.target.value.trim(); applyNfView(); }, 150);
+      t = setTimeout(function(){ state.cteSearch = e.target.value.trim(); applyCteView(); }, 150);
     });
 
-    //GRADE CTE
-    var cteWrap = $('cteWrap');
-    cteWrap.addEventListener('click', function(e){
+    //PAINEL NF-e: VER RATEIO / ABRIR CT-e / ABRIR NF-e / 2 CLIQUES ABRE A NF-e
+    var nfWrap = $('nfWrap');
+    nfWrap.addEventListener('click', function(e){
       var b = e.target.closest('[data-rat]');
       if(b){ openRateio(b.getAttribute('data-rat')); return; }
       var o = e.target.closest('[data-open]');
       if(o) abrirCentral(o.getAttribute('data-open'));
     });
-    cteWrap.addEventListener('dblclick', function(e){
+    nfWrap.addEventListener('dblclick', function(e){
       if(e.target.closest('button')) return;
       var tr = e.target.closest('tbody tr');
       if(tr) abrirCentral(tr.getAttribute('data-nu'));
     });
+    $('nfClose').addEventListener('click', closeNF);
 
-    $('cteClose').addEventListener('click', closeCTe);
-
-    //POP UP
+    //POP UP (BOTOES DE ABRIR NF-e DENTRO DO RATEIO)
+    $('ratBody').addEventListener('click', function(e){
+      var o = e.target.closest('[data-open]');
+      if(o) abrirCentral(o.getAttribute('data-open'));
+    });
     $('ratClose').addEventListener('click', closeRateio);
     $('ovRat').addEventListener('mousedown', function(e){ if(e.target === this) closeRateio(); });
     document.addEventListener('keydown', function(e){
       if(e.key !== 'Escape') return;
-      //ESC FECHA O QUE ESTIVER POR CIMA: POP UP > LISTA DE TOPs > PAINEL DO CTE
+      //ESC FECHA O QUE ESTIVER POR CIMA: POP UP > LISTA DE TOPs > PAINEL DA NF-e
       if($('ovRat').classList.contains('open')) closeRateio();
-      else if(ms.classList.contains('open')) ms.classList.remove('open');
-      else if(state.nfSel) closeCTe();
+      else if(MS_LISTAS.some(function(m){ return m.aberto(); })) MS_LISTAS.forEach(function(m){ m.fechar(); });
+      else if(state.cteSel) closeNF();
     });
   }
 
@@ -1347,53 +1467,64 @@
     var prjs = [[0, '<SEM PROJETO>'], [101, 'SAFRA 26/27'], [102, 'IRRIGACAO PIVO 3']];
     var parcs = [[1201, 'AGRO INSUMOS LTDA'], [1388, 'FERTILIZANTES DO CERRADO SA'], [1502, 'SEMENTES BRASIL LTDA'], [1610, 'NUTRI SOLO COMERCIO']];
     var transp = [[3001, 'TRANSPORTES RAPIDO SUL LTDA'], [3002, 'LOGISTICA CENTRO OESTE']];
-    var tops = [{CODTIPOPER:100, DESCROPER:'COMPRA DE INSUMOS'}, {CODTIPOPER:101, DESCROPER:'COMPRA P/ USO E CONSUMO'}, {CODTIPOPER:105, DESCROPER:'COMPRA DE ATIVO IMOBILIZADO'}, {CODTIPOPER:110, DESCROPER:'COMPRA P/ INDUSTRIALIZACAO'}];
-    function chave(){ var s = '5126'; while(s.length < 44) s += Math.floor(rnd() * 10); return s; }
+    var tops = [{CODTIPOPER:9, DESCROPER:'NFE COMPRA INSUMOS'}, {CODTIPOPER:26, DESCROPER:'NFE COMPRA APLICACAO'}, {CODTIPOPER:30, DESCROPER:'NFE COMPRA USO E CONSUMO'}];
+    var topsCte = [{CODTIPOPER:27, DESCROPER:'CTE ENTRADA FRETE S/ COMPRA'}, {CODTIPOPER:28, DESCROPER:'CTE ENTRADA FRETE TRANSFERENCIA'}];
+    var emps = [[1, 'AGRISAN MATRIZ'], [3, 'AGRISAN FILIAL GO']];
+    function chave(p){ var s = p; while(s.length < 44) s += Math.floor(rnd() * 10); return s; }
     function dt(d){ var x = new Date(); x.setDate(x.getDate() - d); var p = function(n){ return (n < 10 ? '0' : '') + n; }; return p(x.getDate()) + '/' + p(x.getMonth() + 1) + '/' + x.getFullYear(); }
-    function nota(nu, n, parc, top, vlr, frete, dias, nat, cr, prj, chaveDoc){
-      return {NUNOTA:nu, NUMNOTA:n, SERIENOTA:'1', CODEMP:1, CHAVE:chaveDoc, DTNEG:dt(dias + 1), DTENTSAI:dt(dias),
+    function nota(nu, n, parc, top, vlr, dias, nat, cr, prj, ch){
+      var e = pick(emps);
+      return {NUNOTA:nu, NUMNOTA:n, SERIENOTA:'1', CODEMP:e[0], NOMEFANTASIA:e[1], CHAVE:ch, DTNEG:dt(dias + 1), DTENTSAI:dt(dias),
         CODNAT:nat[0], DESCRNAT:nat[1], CODCENCUS:cr[0], DESCRCENCUS:cr[1], CODPROJ:prj[0], DESCRPROJ:prj[1],
-        VLRNOTA:vlr, VLRFRETE:frete, CODTIPOPER:top.CODTIPOPER, DESCROPER:top.DESCROPER,
+        VLRNOTA:vlr, CODTIPOPER:top.CODTIPOPER, DESCROPER:top.DESCROPER,
         CONFIRMADA: rnd() > .15 ? 'Sim' : 'Não', CODPARC:parc[0], NOMEPARC:parc[1]};
     }
-    var NF = [], CTE = {}, RAT = {};
-    for(var i = 0; i < 26; i++){
-      var nat = pick(nats), cr = pick(crs), prj = pick(prjs);
-      var vlr = Math.round((8000 + rnd() * 120000) * 100) / 100, frete = Math.round(vlr * (0.02 + rnd() * 0.05) * 100) / 100;
-      var nf = nota(84000 + i * 7, 15230 + i, pick(parcs), pick(tops), vlr, frete, Math.floor(rnd() * 28), nat, cr, prj, chave());
-      var rateada = i % 2 === 0;
-      var linhasNF = rateada
-        ? [{n:nat, c:crs[0], p:prjs[1], perc:60}, {n:nat, c:crs[1], p:prjs[1], perc:40}]
-        : [{n:nat, c:cr, p:prj, perc:100, sem:true}];
-      RAT[nf.NUNOTA] = linhasNF.map(function(l){ return {ORIGEM:'NF', NUNOTA:nf.NUNOTA, NUMNOTA:nf.NUMNOTA, VLRNOTA:nf.VLRNOTA, SEMRATEIO:l.sem ? 'S' : 'N',
+    function linhaRat(origem, n, l){
+      return {ORIGEM:origem, NUNOTA:n.NUNOTA, NUMNOTA:n.NUMNOTA, VLRNOTA:n.VLRNOTA, SEMRATEIO:l.sem ? 'S' : 'N',
         CODNAT:l.n[0], DESCRNAT:l.n[1], CODCENCUS:l.c[0], DESCRCENCUS:l.c[1], CODPROJ:l.p[0], DESCRPROJ:l.p[1], PERCRATEIO:l.perc,
-        VLRRATEIO:Math.round(nf.VLRNOTA * l.perc) / 100, CODPARC:nf.CODPARC}; });
-      var temCte = i % 4 !== 3;
-      nf.QTDCTE = temCte ? 1 : 0;
-      NF.push(nf);
-      if(temCte){
-        var tr = pick(transp), vc = i % 5 === 0 ? Math.round(frete * 0.93 * 100) / 100 : frete;
-        var c = nota(90000 + i * 5, 7700 + i, tr, {CODTIPOPER:120, DESCROPER:'CT-E ENTRADA (FRETE S/ COMPRA)'}, vc, 0, Math.floor(rnd() * 3), nat, nf.CODCENCUS ? cr : cr, prj, chave());
-        var linhasCte = linhasNF.map(function(l){ return {n:l.n, c:l.c, p:l.p, perc:l.perc, sem:l.sem}; });
-        if(i % 6 === 0 && rateada){ linhasCte[0].perc = 70; linhasCte[1].perc = 30; }
-        if(i % 10 === 4){ linhasCte = [{n:nat, c:cr, p:prj, perc:100, sem:true}]; }
-        c.QTDRAT = linhasCte[0].sem ? 0 : linhasCte.length; c.QTDNF = 1;
-        nf.QTDCTESEMRAT = c.QTDRAT ? 0 : 1;
-        CTE[nf.NUNOTA] = [c];
-        RAT['C' + c.NUNOTA] = {nf:nf.NUNOTA, linhas:linhasCte.map(function(l){ return {ORIGEM:'CTE', NUNOTA:c.NUNOTA, NUMNOTA:c.NUMNOTA, VLRNOTA:c.VLRNOTA, SEMRATEIO:l.sem ? 'S' : 'N',
-          CODNAT:l.n[0], DESCRNAT:l.n[1], CODCENCUS:l.c[0], DESCRCENCUS:l.c[1], CODPROJ:l.p[0], DESCRPROJ:l.p[1], PERCRATEIO:l.perc,
-          VLRRATEIO:Math.round(c.VLRNOTA * l.perc) / 100, CODPARC:c.CODPARC}; })};
-      }
+        VLRRATEIO:Math.round(n.VLRNOTA * l.perc) / 100, CODPARC:n.CODPARC};
     }
-    NF.forEach(function(n){ n.VLRCTE = CTE[n.NUNOTA] ? CTE[n.NUNOTA][0].VLRNOTA : 0; });
+    var CTES = [], NFS = {}, RAT = {}, TOPNF = {};
+    for(var i = 0; i < 24; i++){
+      var nat = pick(nats), cr = pick(crs), prj = pick(prjs);
+      var qtdNF = i % 5 === 4 ? 0 : (i % 7 === 0 ? 2 : 1);
+      var nfs = [], linhasNF = [], fretes = 0;
+      for(var j = 0; j < qtdNF; j++){
+        var vlr = Math.round((8000 + rnd() * 120000) * 100) / 100, frete = Math.round(vlr * (0.02 + rnd() * 0.05) * 100) / 100;
+        var nf = nota(84000 + i * 7 + j, 15230 + i * 2 + j, pick(parcs), pick(tops), vlr, 2 + Math.floor(rnd() * 25), nat, cr, prj, chave('5126'));
+        nf.VLRFRETE = frete; fretes += frete;
+        var rateada = (i + j) % 2 === 0;
+        var ln = rateada ? [{n:nat, c:crs[0], p:prjs[1], perc:60}, {n:nat, c:crs[1], p:prjs[1], perc:40}] : [{n:nat, c:cr, p:prj, perc:100, sem:true}];
+        ln.forEach(function(l){ linhasNF.push(linhaRat('NF', nf, l)); });
+        nfs.push(nf);
+      }
+      var vc = qtdNF ? (i % 6 === 1 ? Math.round(fretes * 0.95 * 100) / 100 : fretes) : Math.round((300 + rnd() * 3000) * 100) / 100;
+      var c = nota(90000 + i * 5, 7700 + i, pick(transp), pick(topsCte), vc, Math.floor(rnd() * 28), nat, cr, prj, chave('5126'));
+      c.TIPFRETE = i % 3 ? 'Extra-nota' : 'Incluso na nota';
+      c.CIFFOB = i % 5 === 3 ? 'Não informado' : i % 4 ? 'FOB - Contratação do Frete por conta do Destinatário' : 'CIF - Contratação do Frete por conta do Remetente';
+      var base = linhasNF.length ? linhasNF.filter(function(l){ return l.NUNOTA === nfs[0].NUNOTA; }) : [];
+      var lc = base.length && base[0].SEMRATEIO === 'N'
+        ? base.map(function(l){ return {n:[l.CODNAT, l.DESCRNAT], c:[l.CODCENCUS, l.DESCRCENCUS], p:[l.CODPROJ, l.DESCRPROJ], perc:l.PERCRATEIO}; })
+        : [{n:nat, c:cr, p:prj, perc:100, sem:true}];
+      if(i % 6 === 0 && lc.length === 2){ lc[0].perc = 70; lc[1].perc = 30; }
+      if(i % 8 === 2){ lc = [{n:nat, c:cr, p:prj, perc:100, sem:true}]; }
+      c.QTDNF = qtdNF;
+      c.QTDRAT = lc[0].sem ? 0 : lc.length;
+      CTES.push(c);
+      NFS[c.NUNOTA] = nfs;
+      TOPNF[c.NUNOTA] = nfs.map(function(n){ return n.CODTIPOPER; });
+      RAT[c.NUNOTA] = linhasNF.concat(lc.map(function(l){ return linhaRat('CTE', c, l); }));
+    }
     return {
       query: function(nome, ctx){
-        if(nome === 'tops') return tops;
-        if(nome === 'nfs') return NF.filter(function(n){
-          return (!ctx.apenasCte || n.QTDCTE > 0) && (!ctx.apenasSemRat || n.QTDCTESEMRAT > 0) && (!ctx.tops || !ctx.tops.length || ctx.tops.indexOf(n.CODTIPOPER) >= 0);
+        if(nome === 'topsNf') return tops;
+        if(nome === 'topsCte') return topsCte;
+        if(nome === 'ctes') return CTES.filter(function(c){
+          return (!ctx.topsCte || !ctx.topsCte.length || ctx.topsCte.indexOf(c.CODTIPOPER) >= 0)
+            && (!ctx.topsNf || !ctx.topsNf.length || TOPNF[c.NUNOTA].some(function(t){ return ctx.topsNf.indexOf(t) >= 0; }));
         });
-        if(nome === 'ctes') return CTE[ctx.nunota] || [];
-        if(nome === 'rateio'){ var r = RAT['C' + ctx.nunotaCte]; return r ? RAT[r.nf].concat(r.linhas) : []; }
+        if(nome === 'nfs') return NFS[ctx.nunotaCte] || [];
+        if(nome === 'rateio') return RAT[ctx.nunotaCte] || [];
         return [];
       }
     };
@@ -1404,10 +1535,11 @@
      ========================================================================= */
   function init(){
     if(DEMO) $('demoTag').style.display = '';
+    criaListas();
     bind();
     defaultFilters();
-    renderCTes();
-    loadTops().catch(function(e){ toast(e.message, true); }).then(loadNFs);
+    renderNFs();
+    loadTops().catch(function(e){ toast(e.message, true); }).then(loadCTes);
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
